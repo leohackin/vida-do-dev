@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#121217"><meta name="description" content="Um pequeno universo isométrico animado de software, café e caos. Arte original Vida do Dev.">
+<title>Vida do Dev · office.exe</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+ <header class="topbar">
+  <div class="identity"><div class="brand-mark"><span>_</span></div><div><div class="brand">vida<span>do</span>dev<b>_</b></div><div class="subtitle">OFFICE.EXE <span>·</span> UM ESCRITÓRIO QUE NUNCA PARA</div></div></div>
+  <div class="head-meta"><span class="live-indicator"><i></i> SIMULAÇÃO AO VIVO</span><span class="version">ALPHA 0.4 / ILUSTRATED EDITION</span></div>
+ </header>
+ <main>
+  <section class="game-shell" id="gameShell" aria-label="Escritório isométrico animado">
+   <canvas width="1536" height="1024" id="scene" aria-label="Arte isométrica detalhada do escritório da Vida do Dev com personagens que se movimentam e interagem" role="img"></canvas>
+   <div class="stage-hud stage-clock"><span class="eyebrow"><span class="lamp"></span> DIA DE TRABALHO</span><strong id="clockValue">09:42</strong><small id="dayLabel">mais um dia normal. talvez.</small></div>
+   <div class="stage-hud stage-event"><span class="eyebrow">ACONTECENDO AGORA</span><strong id="eventName">UMA PAUSA PRO CAFÉ ☕</strong><small id="eventText">Mais um commit e eu juro que paro.</small></div>
+   <div class="stage-hint" id="stageHint">CLIQUE EM UM AMBIENTE PARA ENVIAR UM PERSONAGEM <span>·</span> SCROLL PARA ZOOM</div>
+   <div class="zoom-controls"><button type="button" id="zoomOut" title="Diminuir zoom" aria-label="Diminuir zoom">−</button><span id="zoomLabel">100%</span><button type="button" id="zoomIn" title="Aumentar zoom" aria-label="Aumentar zoom">+</button><button type="button" id="resetZoom" title="Reenquadrar cenário" aria-label="Reenquadrar cenário">⤢</button></div>
+   <div class="stage-tooltip" id="hoverTip" hidden></div>
+  </section>
+  <section class="console" aria-label="Controles da simulação">
+   <div class="ticker"><span class="ticker-icon">☕</span><div><div class="eyebrow">HISTÓRIAS DO ESCRITÓRIO</div><p id="story">O PM tem uma ideia que vai levar só cinco minutinhos.</p></div></div>
+   <div class="actions">
+    <button id="pause" class="control primary" type="button"><span class="ic">Ⅱ</span><span id="pauseLabel">Pausar</span></button>
+    <button id="surprise" class="control yellow" type="button"><span class="ic">⚡</span>Gerar caos</button>
+    <button id="markers" class="control" type="button"><span class="ic">◎</span><span id="markersLabel">Destinos</span></button>
+    <button id="fullscreen" class="control icon" title="Tela cheia" type="button" aria-label="Tela cheia">⛶</button>
+   </div>
+  </section>
+  <section class="settings">
+   <div class="settings-group"><label for="character">ACOMPANHAR</label><select id="character"><option value="dev">O Dev · DE BOA</option><option value="guest" selected>Visitante do café</option><option value="ana">Ana · Front-end</option><option value="ops">Ops · Infra</option></select></div>
+   <div class="settings-group"><label for="timeMode">ILUMINAÇÃO</label><select id="timeMode"><option value="real">Hora real</option><option value="morning">Manhã</option><option value="sunset">Fim de tarde</option><option value="night">Noite</option></select></div>
+   <div class="settings-group"><label for="season">EVENTO</label><select id="season"><option value="auto">Automático</option><option value="normal">Dia normal</option><option value="halloween">Halloween</option><option value="christmas">Natal</option><option value="programmer">Dia do Programador</option><option value="friday">Deploy sexta-feira</option></select></div>
+   <div class="settings-group"><label for="speed">VELOCIDADE</label><select id="speed"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option></select></div>
+   <div class="settings-group sound"><button type="button" id="sound"><span id="soundIcon">♪</span><span id="soundLabel">Som desligado</span></button></div>
+  </section>
+  <nav class="quick-travel" aria-label="Enviar personagem ao ambiente">
+   <span class="eyebrow">LEVAR PERSONAGEM PARA</span><div class="quick-links">
+   <button type="button" data-dest="coffee">☕ Copa</button><button type="button" data-dest="desk">💻 Estações</button><button type="button" data-dest="meeting">📋 Reunião</button><button type="button" data-dest="lounge">🛋️ Descompressão</button><button type="button" data-dest="arcade">🕹️ Fliperama</button><button type="button" data-dest="bathroom">🚻 Banheiro</button><button type="button" data-dest="entrance">🚪 Entrada</button></div>
+  </nav>
+  <footer><span>ESTE NÃO É UM VÍDEO. É UM PEQUENO MUNDO ANIMADO.</span><span>ART DIRECTION · @VIDADODEV <span class="heart">♥</span> CAFÉ E DEPLOY</span></footer>
+ </main>
+</div>
+<script src="navigation.js"></script>
+<script src="office.js"></script>
+</body>
+</html>
