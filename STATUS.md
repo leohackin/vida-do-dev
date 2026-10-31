@@ -27,7 +27,7 @@ Os antigos `test_page.py` e `test_sit.py` são scripts de diagnóstico/captura, 
 
 ## GitHub e ambiente
 
-O Git HTTPS consegue ler e enviar branches. A API em `api.github.com` responde 403 no CONNECT do proxy: abrir PR, consultar revisão/checks e efetuar merge pela API estão bloqueados nesta sessão. A inclusão de `api.github.com` foi salva no rascunho de rede, preservando os presets; salvar o rascunho não aplica a mudança nem publica o ambiente. É necessário revisar/salvar nas configurações e publicar o ambiente, depois repetir a operação da API e conferir a autenticação existente. Nenhum novo token foi solicitado. Não foi feito merge direto na `main` para contornar a revisão.
+O commit de implementação `6038874` foi enviado para `feat/office-v06`. A tentativa de criar PR com `gh pr create` falhou com `Post "https://api.github.com/graphql": Forbidden`; não foi criado PR nem realizado merge. O Git HTTPS consegue ler e enviar branches. A API em `api.github.com` responde 403 no CONNECT do proxy: abrir PR, consultar revisão/checks e efetuar merge pela API estão bloqueados nesta sessão. A inclusão de `api.github.com` foi salva no rascunho de rede, preservando os presets; salvar o rascunho não aplica a mudança nem publica o ambiente. É necessário revisar/salvar nas configurações e publicar o ambiente, depois repetir a operação da API e conferir a autenticação existente. Nenhum novo token foi solicitado. Não foi feito merge direto na `main` para contornar a revisão.
 
 O workflow passou a incluir os testes de navegador e upload das capturas. A execução remota e seus resultados precisam ser consultados no GitHub após restabelecer o acesso. Nenhuma das quatro fases é declarada integralmente concluída.
 
