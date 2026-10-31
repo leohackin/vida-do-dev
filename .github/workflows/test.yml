@@ -1,0 +1,14 @@
+name: Engine tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check office.js
+      - run: node --test tools/test_navigation.cjs tools/test_engine.cjs
