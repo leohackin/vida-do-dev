@@ -1,6 +1,6 @@
-# Vida do Dev — office.exe v0.5
+# Vida do Dev — office.exe v0.6
 
-Esta versão recupera a v0.4 e corrige rotas e reservas de interação. Consulte `STATUS.md` para testes, fases e limitações.
+Esta versão evolui a v0.5 com mapa de obstáculos, posições individuais, filas, transições do Dev e PM independente. As quatro fases continuam parciais. Consulte `STATUS.md` para testes, fases e limitações.
 
 Teste de lógica: `node --test tools/test_navigation.cjs tools/test_engine.cjs` (Node.js 18 ou superior).
 
@@ -12,7 +12,7 @@ Extraia o ZIP e abra `index.html` no Chrome, Firefox ou Safari. Sem servidor, de
 
 ## Controles
 
-- Acompanhar: selecione **Visitante**, **Dev**, **Ana** ou **Ops**.
+- Acompanhar: selecione **Visitante**, **Dev**, **Ana**, **Ops** ou **PM**.
 - Clicar em **Copa**, **Estações**, **Reunião**, **Descompressão**, **Fliperama**, **Banheiro** ou **Entrada** envia o personagem escolhido ao local.
 - Clicar em uma **parte do cenário** também envia o personagem para esse ambiente.
 - Clicar diretamente em um **personagem animado** o seleciona.
@@ -28,7 +28,7 @@ Extraia o ZIP e abra `index.html` no Chrome, Firefox ou Safari. Sem servidor, de
 - `assets/guest-walksheet.png`: personagem PNG extraído da imagem, com seis quadros por direção.
 - `assets/dev-sheet.png`: Dev independente com óculos e camisa DE BOA, animações de caminhar, café, digitar e sentar.
 - `assets/ana-sheet.png`, `assets/ops-sheet.png`: variantes de roupa preservando a textura do ator extraído.
-- `office.js`: engine de Canvas2D, grafo de navegação, rotas, ordenação, oclusão de objetos, comportamento, diálogos, eventos, interface, pan e zoom.
+- `office.js`: engine de Canvas2D, mapa de piso, rotas, ordenação, oclusão de objetos, comportamento, diálogos, eventos, interface, pan e zoom.
 - `tools/build_assets.py`: pipeline local para separar a ilustração e sprites; requer Pillow e OpenCV.
 
 ## Limitação importante
@@ -41,3 +41,18 @@ A arte original é **uma ilustração única** com várias pessoas e móveis já
 2. Redesenhar sprites dos personagens em 4/8 direções, com quadros anatômicos de sentar/levantar/café.
 3. Separar os móveis de primeiro plano e o fundo com máscaras artísticas; adicionar portas e gestos animados.
 4. Publicar o motor em um website e usar um editor JSON de eventos para a @vidadodev.
+
+## Validação da v0.6
+
+```sh
+node --check office.js
+node --check navigation.js
+node --test tools/test_navigation.cjs tools/test_engine.cjs
+python -m pip install -r requirements-dev.txt
+python -m playwright install --with-deps chromium
+python tools/test_browser.py
+```
+
+Quando já existe Chromium no sistema, o teste o utiliza sem download. Também aceita `BROWSER_EXECUTABLE=/caminho/do/chromium`. Os testes de lógica não exigem dependências externas. Capturas e relatório ficam em `artifacts/` e são ignorados pelo Git; o workflow os retém como artefato.
+
+Para servir o jogo localmente: `python -m http.server 8000`, na raiz do checkout. Abertura direta de `index.html` continua suportada. Não execute `tools/build_assets.py` durante uma instalação normal: ele regenera a arte. O escritório ainda contém pessoas pintadas no fundo; as interações novas usam pontos de aproximação, sem cadeiras reconstruídas. Consulte `STATUS.md` para as limitações e evidências por fase.

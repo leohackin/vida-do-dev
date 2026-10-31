@@ -24,3 +24,18 @@ test('retarget and cancellation free the previous slot',()=>{
  assert.equal(slots.owner('desk'),undefined);assert.equal(slots.reserve('ana','desk'),true);
  slots.release('dev');assert.equal(slots.owner('coffee'),undefined);assert.equal(slots.owner('desk'),'ana');
 });
+const {createFloor}=require('../navigation.js');
+test('footprint clearance rejects walls, corners, and disconnected regions',()=>{
+ const floor=createFloor([[0,0],[240,0],[240,240],[0,240]],[[[100,0],[140,0],[140,240],[100,240]]],12);
+ assert.equal(floor.clear([5,50]),false);assert.equal(floor.clear([95,50]),false);
+ assert.equal(floor.route([48,48],[192,48]),null);
+ assert.equal(floor.route([5,50],[48,48]),null);
+});
+test('routing detours around furniture and temporary actors without cutting corners',()=>{
+ const floor=createFloor([[0,0],[300,0],[300,300],[0,300]],[[[120,100],[180,100],[180,200],[120,200]]],12);
+ const start=[48,150],end=[252,150],blocked=[[144,60]];
+ assert.equal(floor.segment(start,end),false);
+ const route=floor.route(start,end,blocked);assert.ok(route);let last=start;
+ for(const p of route){assert.ok(floor.segment(last,p,blocked));last=p;}
+ assert.deepEqual(last,end);
+});
