@@ -1,3 +1,19 @@
+# Assentos e oclusões da v0.8 — 01/11/2026
+
+Estações, reunião, sofá e fliperama agora separam o ponto lógico de aproximação da posição visual no móvel. O corpo usado por A*, reservas e colisões permanece no piso seguro; a animação de sentar interpola até a cadeira/sofá e a de levantar retorna ao ponto lógico antes da caminhada. Cada slot sentado possui um assento visual exclusivo.
+
+Máscaras adicionais redesenham pixels do clean plate à frente do ator: frente do sofá, mesa de reunião, duas mesas de estação e mesa do fliperama. Isso posiciona pernas e parte inferior do tronco atrás do móvel, sem introduzir polígonos visuais na geometria de navegação.
+
+Evidências locais:
+- **25 testes de lógica/integração aprovados**, incluindo cobertura de todos os assentos visuais exclusivos.
+- Chromium 154: 35 percursos, controles reais e prévia isolada aprovados, sem exceções.
+- `seats.png` inspecionado: quatro atores ocupam estação, reunião, sofá e fliperama com oclusão do móvel; é inspeção técnica, não aprovação artística humana.
+- Orçamento verificável: PNGs usados em runtime abaixo de 20 MiB; emissão Canvas p95 deve permanecer abaixo de 20 ms em cada motor do CI. A medição não equivale a FPS sustentado ou desempenho de GPU.
+
+Limites: as máscaras são polígonos manuais e a anatomia sentada ainda deriva proceduralmente dos sheets existentes. O corpo lógico separado do assento é uma simplificação consciente. Dispositivos físicos e aprovação artística continuam fora da automação.
+
+---
+
 # Integração artística da v0.7 — 01/11/2026
 
 ## Resultado implementado

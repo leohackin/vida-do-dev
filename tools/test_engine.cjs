@@ -27,6 +27,14 @@ test('arrival holds individual slot and departure releases it',()=>{
  assert.ok(e.sendTo(guest,'coffee'));assert.equal(e.slots.owner(slot),undefined);
  assert.equal(guest.transition.kind,'stand');const x=guest.x,y=guest.y;e.tick(.08);assert.equal(guest.x,x);assert.equal(guest.y,y);
 });
+test('every seated interaction slot has a distinct visual seat',()=>{
+ const e=engine();
+ for(const destination of ['desk','meeting','lounge','arcade']){
+  const seats=e.interactionSlots[destination].map((_,index)=>e.interactionVisual[`${destination}:${index}`]);
+  assert.ok(seats.every(Boolean),destination);
+  assert.equal(new Set(seats.map(String)).size,seats.length,destination);
+ }
+});
 test('invalid or obstructed origin does not spawn, move or reserve',()=>{
  const e=engine(),guest=e.actors[0];guest.x=400;guest.y=300;
  assert.equal(e.sendTo(guest,'coffee'),false);assert.equal(e.sendTo(e.actors[1],'missing'),false);

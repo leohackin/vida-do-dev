@@ -23,6 +23,13 @@ class ArtAssets(unittest.TestCase):
         digest = hashlib.sha256((BASE / 'assets/reference-original.png').read_bytes()).hexdigest()
         self.assertEqual(digest, '105580ac7364b063725ad359c8b3913468e2e2aeeba04ce65ffa09c1f01ad834')
 
+    def test_runtime_png_budget(self):
+        runtime = ['office-clean.png', 'reference-original.png', 'guest-walksheet.png',
+                   'dev-sheet.png', 'dev-directional.png', 'ana-sheet.png',
+                   'ops-sheet.png', 'pm-sheet.png']
+        total = sum((BASE / 'assets' / name).stat().st_size for name in runtime)
+        self.assertLess(total, 20 * 1024 * 1024, f'Runtime PNGs total {total / 1024 / 1024:.1f} MiB')
+
     def test_review_png_dimensions_and_frame_bounds(self):
         metadata = json.loads((BASE / 'assets/proposals/dev-directional-review.json').read_text())
         atlas = BASE / 'assets/proposals' / metadata['image']
