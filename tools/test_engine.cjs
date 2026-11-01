@@ -59,6 +59,13 @@ test('pause freezes movement, transitions and simulation timers',()=>{
  const e=engine(),a=e.actors[0];e.sendTo(a,'desk');e.state.running=false;
  const before=JSON.stringify(e.actors);e.tick(.08);assert.equal(JSON.stringify(e.actors),before);assert.equal(e.state.timer,0);
 });
+test('Dev records all four movement directions for the directional atlas',()=>{
+ const e=engine(),dev=e.actors.find(a=>a.id==='dev');dev.active=true;
+ for(const [dx,dy,expected] of [[1,1,0],[-1,1,1],[1,-1,2],[-1,-1,3]]){
+  dev.x=800;dev.y=600;dev.walking=true;dev.transition=null;dev.route=[{x:800+dx*100,y:600+dy*100}];
+  e.tick(.08);assert.equal(dev.facing,expected);
+ }
+});
 test('upper visit keeps its permit during interaction and releases after departure',()=>{
  const e=engine(),[owner,waiting]=e.actors;
  assert.ok(e.sendTo(owner,'coffee'));finish(e,owner);owner.wait=Infinity;

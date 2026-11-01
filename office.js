@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.6
+/* Vida do Dev · illustrated office engine v0.7
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -7,7 +7,7 @@
 const cv=document.getElementById('scene'),ctx=cv.getContext('2d',{alpha:true});
 const $=id=>document.getElementById(id);
 const W=1536,H=1024,images={};
-const imageSources={background:'assets/office-illustration.png',guest:'assets/guest-walksheet.png',dev:'assets/dev-sheet.png',ana:'assets/ana-sheet.png',ops:'assets/ops-sheet.png',pm:'assets/pm-sheet.png'};
+const imageSources={background:'assets/office-clean.png',brand:'assets/reference-original.png',guest:'assets/guest-walksheet.png',dev:'assets/dev-sheet.png',devMove:'assets/dev-directional.png',ana:'assets/ana-sheet.png',ops:'assets/ops-sheet.png',pm:'assets/pm-sheet.png'};
 let loaded=0;Object.entries(imageSources).forEach(([name,url])=>{const img=new Image();img.src=url;img.onload=()=>{loaded++;};img.onerror=()=>{console.error('Erro ao carregar sprite',url);};images[name]=img;});
 // Hand-authored foot-space map: furniture is solid, targets remain on visible floor.
 // Enclosed meeting room and occupied seats are approached from the corridor.
@@ -60,7 +60,7 @@ const actorDefs=[
  {id:'pm',name:'PM',img:'pm',x:1056,y:900,speed:90,delay:7,home:'meeting',active:false},
  {id:'ops',name:'Ops',img:'ops',x:716,y:835,speed:87,delay:5,home:'coffee',active:false}
 ];
-const actors=actorDefs.map(v=>({...v,route:[],goal:null,pose:'idle',elapsed:0,wait:2+v.delay,dir:0,bubble:null,blink:0,paused:false,visible:true,walking:false,alpha:1,slot:null,transition:null,motionTime:0,blocked:0}));
+const actors=actorDefs.map(v=>({...v,route:[],goal:null,pose:'idle',elapsed:0,wait:2+v.delay,dir:0,facing:0,bubble:null,blink:0,paused:false,visible:true,walking:false,alpha:1,slot:null,transition:null,motionTime:0,blocked:0}));
 const findActor=id=>actors.find(a=>a.id===id);
 const state={running:true,speed:1,zoom:1,panX:0,panY:0,markers:false,time:'real',season:'auto',spawnTimer:14,selected:'guest',timer:0,eventTimer:11,storyTimer:0,ambience:false,part:[],fx:[],hover:null,manual:false};
 let last=performance.now(),audio=null,pan=null,nowTime=Date.now();
@@ -161,6 +161,7 @@ function tick(dt){if(!state.running)return;dt=Math.min(dt,.08)*state.speed;state
     continue;
    }
    a.blocked=0;a.motionTime+=dt;a.x=next[0];a.y=next[1];a.dir=dx>=0?0:1;
+   a.facing=dy>=0?(dx>=0?0:1):(dx>=0?2:3);
    if(l<=step+.001){a.route.shift();if(!a.route.length)arrive(a);}
   }else if(!a.walking){a.wait-=dt;if(a.wait<=0){const options=a.id==='dev'?['coffee','desk','lounge','meeting','bathroom']:a.id==='ops'?['desk','coffee','arcade','bathroom']:['coffee','meeting','arcade','lounge','desk','bathroom'];if(Object.values(queues).some(q=>q.includes(a.id))||!sendTo(a,choose(a.id==='pm'?['meeting','coffee','desk']:options)))a.wait=1;}}
  }
@@ -169,6 +170,19 @@ function tick(dt){if(!state.running)return;dt=Math.min(dt,.08)*state.speed;state
 function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!im?.complete||!im.naturalWidth)return;
  let x=a.x,y=a.y,t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
  let frameX=step,frameY=0,sw=78,sh=183,dw=78,dh=183;
+ if(a.id==='dev'&&a.walking&&!a.transition&&images.devMove?.complete&&images.devMove.naturalWidth){
+  const frames=[
+   [[119,35,165,275],[425,36,126,276],[690,35,159,275],[992,36,147,275]],
+   [[115,337,170,277],[420,337,133,276],[698,338,164,276],[1000,338,146,276]],
+   [[116,638,163,276],[410,638,138,275],[697,638,163,277],[984,639,155,275]],
+   [[113,933,161,282],[407,933,148,281],[691,933,166,282],[986,933,156,282]]
+  ];
+  const [sx,sy,sourceWidth,sourceHeight]=frames[a.facing][Math.floor(a.motionTime*6)%4];
+  const targetHeight=190,targetWidth=sourceWidth/sourceHeight*targetHeight;
+  ctx.save();ctx.globalAlpha=a.alpha;ctx.fillStyle='rgba(29,26,25,.30)';ctx.beginPath();ctx.ellipse(x,y+1,25,6,0,0,2*Math.PI);ctx.fill();
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(images.devMove,sx,sy,sourceWidth,sourceHeight,x-targetWidth/2,y-targetHeight+phase,targetWidth,targetHeight);ctx.restore();
+  return;
+ }
  if(a.img==='dev'){sw=112;sh=202;dw=103;dh=187;
   frameY=a.pose==='walk'?1:a.pose==='coffee'?2:a.pose==='type'?3:0;
   frameX=a.walking?step:(a.pose==='coffee'||a.pose==='type'?Math.floor(t*4)%6:0);
@@ -229,6 +243,9 @@ function drawEffects(){let time=state.time,hr=new Date().getHours();if(time==='r
 function render(){ctx.clearRect(0,0,W,H);if(images.background?.complete&&images.background.naturalWidth){ctx.save();ctx.translate(W/2+state.panX,H/2+state.panY);ctx.scale(state.zoom,state.zoom);ctx.translate(-W/2,-H/2);
  // transparent edges of illustration remain truly transparent
  ctx.drawImage(images.background,0,0,W,H);
+ // Preserve the approved wordmark byte-for-byte from the reference. The clean
+ // plate removes people/cats, while this exterior crop contains branding only.
+ if(images.brand?.complete&&images.brand.naturalWidth)ctx.drawImage(images.brand,0,805,300,219,0,805,300,219);
  for(let a of [...actors].filter(a=>a.active).sort((a,b)=>a.y-b.y)){imgDraw(a);drawOcclusion(a);}
  drawEffects();drawTargets();for(let a of actors)if(a.active)drawBubble(a);ctx.restore();}
  else{ctx.fillStyle='#242229';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ffc739';ctx.font='bold 32px system-ui';ctx.textAlign='center';ctx.fillText('Montando o escritório...',W/2,H/2);}}

@@ -12,6 +12,7 @@ jobs:
           node-version: '22'
       - run: node --check office.js && node --check navigation.js
       - run: node --test tools/test_navigation.cjs tools/test_engine.cjs
+      - run: python tools/test_art_assets.py
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 15

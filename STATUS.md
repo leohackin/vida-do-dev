@@ -1,3 +1,28 @@
+# Integração artística da v0.7 — 01/11/2026
+
+## Resultado implementado
+
+- `assets/office-clean.png` substitui o fundo com pessoas, gatos e balões pintados. Cadeiras, sofá, mesas e piso foram reconstruídos; os cinco atores do motor são agora as únicas pessoas da cena.
+- O letreiro **SONHE / PLANEJE / CÓDIGO / ENTREGUE / REPITA** foi corrigido. A marca VIDA DO DEV é desenhada por um recorte exato de `assets/reference-original.png`, evitando a versão alterada gerada no clean plate.
+- `assets/dev-directional.png` fornece caminhada do Dev em sudeste, sudoeste, nordeste e noroeste. O motor escolhe a direção por `dx/dy` e usa quatro quadros por direção. Café, digitação, sentar e levantar continuam no sheet de interação anterior.
+- A referência aprovada permanece byte a byte intacta e também funciona como fonte explícita da marca.
+
+## Evidências locais
+
+- `python tools/test_art_assets.py`: três verificações aprovadas — hash da referência, dimensões/recortes dos PNGs e exportação HTML independente.
+- `node --test --test-isolation=none tools/test_navigation.cjs tools/test_engine.cjs`: **24 testes aprovados**, incluindo as quatro direções do Dev e as três simulações de tráfego.
+- Chromium 154: 35 percursos, chegada por `requestAnimationFrame`, pausa/retomada, fundo limpo, fontes de imagem e prévia independente aprovados; nenhuma exceção da página.
+- Inspeção de `actors.png`, `floor-map.png` e `dev-directions.png`: pessoas/gatos estáticos ausentes, cinco atores móveis visíveis, marca preservada e quatro vistas do Dev distinguíveis. A inspeção visual é evidência técnica, não aprovação artística humana.
+- O CI executará lógica/arte e navegador em Chromium, Firefox e WebKit antes de qualquer merge desta iteração.
+
+## Limites que permanecem
+
+O mapa de colisões ainda é manual. O clean plate é uma reconstrução, não uma separação completa de cada móvel em camadas. As máscaras de oclusão existentes continuam aproximadas. Os demais personagens reutilizam variantes do Visitante e não possuem quatro direções próprias. As poses de interação do Dev ainda são procedurais. Safari real, dispositivos físicos, hardware alvo e aprovação artística humana permanecem fora da evidência automatizada.
+
+As fases 2 e 3 avançam materialmente, mas permanecem parciais nesses pontos. A fase 4 possui cobertura nos três motores via CI, ainda sem equivalência a dispositivos físicos ou aprovação artística.
+
+---
+
 # Correção da prévia isolada — 31/10/2026
 
 O HTML modular da revisão buscava JSON e PNGs por caminhos relativos. Ao disponibilizar apenas o HTML, a página podia abrir enquanto os metadados retornavam HTTP 404 e as imagens ficavam quebradas. O teste anterior servia o repositório completo e não cobria essa forma de abertura.
