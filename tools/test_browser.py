@@ -29,6 +29,9 @@ try:
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.goto(f'http://127.0.0.1:{server.server_port}/')
         page.wait_for_function('Object.values(__officeDebug.images).every(i=>i.complete&&i.naturalWidth>0)')
+        assert page.evaluate('__officeDebug.images.background.src.endsWith("/assets/office-clean.png")')
+        assert page.evaluate('__officeDebug.images.brand.src.endsWith("/assets/reference-original.png")')
+        assert page.evaluate('__officeDebug.images.devMove.src.endsWith("/assets/dev-directional.png")')
         page.wait_for_timeout(1700)  # Let the introduction timer run before deterministic simulation.
         page.locator('#timeMode').select_option('morning')
         page.locator('#season').select_option('normal')
@@ -79,6 +82,17 @@ try:
           [a.x,a.y]=[[600,350],[900,628],[888,744],[1050,506],[1090,604]][i];
           a.pose=['coffee','sit','type','idle','walk'][i++];}e.render();}''')
         page.screenshot(path=str(OUT/'actors.png'),full_page=True)
+        page.evaluate('window.requestAnimationFrame=()=>0')
+        page.wait_for_timeout(100)
+        page.evaluate('''()=>{const e=__officeDebug;
+          for(const a of e.actors)a.active=false;
+          e.render();const dev=e.actors.find(a=>a.id==='dev');dev.active=true;dev.visible=true;
+          dev.walking=true;dev.transition=null;dev.motionTime=.18;
+          [[610,390,0],[770,390,1],[930,390,2],[1090,390,3]].forEach(([x,y,facing])=>{
+            dev.x=x;dev.y=y;dev.facing=facing;e.imgDraw(dev);
+          });
+        }''')
+        page.screenshot(path=str(OUT/'dev-directions.png'),full_page=True)
         page.evaluate('''()=>{const e=__officeDebug;const c=document.getElementById('scene').getContext('2d');
           for(const [poly,col] of [[e.floor.boundary,'#00ff88'],...e.floor.obstacles.map(p=>[p,'#ff2233'])]){
            c.beginPath();poly.forEach((p,i)=>i?c.lineTo(...p):c.moveTo(...p));c.closePath();c.strokeStyle=col;c.lineWidth=3;c.stroke();}
@@ -105,6 +119,37 @@ try:
         report={'engine':ENGINE,'browser':browser.version,'functional_cases':35,
                 'raf_journey':True,'pause_resume':True,'page_errors':errors,
                 'render_ms_median':timings[60],'render_ms_p95':timings[114]}
+        if (BASE / 'tools/art_review.html').exists():
+            from build_art_review import build
+            export = build()
+            review = browser.new_page(viewport={'width':1200,'height':1000})
+            review_errors, requests = [], []
+            review.on('pageerror', lambda e: review_errors.append(str(e)))
+            url = f'http://127.0.0.1:{server.server_port}/isolated-review.html'
+            def isolated(route):
+                requests.append(route.request.url)
+                if route.request.url == url:
+                    route.fulfill(path=str(export), content_type='text/html')
+                else:
+                    route.abort()
+            # Only the HTML is available. Sidecars and image URLs cannot resolve.
+            review.route('**/*', isolated)
+            review.goto(url)
+            review.wait_for_selector('body[data-ready="true"]')
+            review.wait_for_function('Array.from(document.images).every(i=>i.complete&&i.naturalWidth>0)')
+            assert review.locator('canvas').count() == 4
+            review.locator('#frame').fill('2')
+            review.locator('#frame').dispatch_event('input')
+            assert review.locator('#counter').inner_text() == '3 / 4'
+            review.locator('#compare').fill('25')
+            review.locator('#compare').dispatch_event('input')
+            assert review.locator('.candidate').evaluate('(i)=>i.style.clipPath') == 'inset(0px 0px 0px 25%)'
+            assert review.locator('#error').inner_text() == ''
+            assert requests == [url], requests
+            assert not review_errors, review_errors
+            review.screenshot(path=str(OUT/'art-review-standalone.png'), full_page=True)
+            report['standalone_art_review'] = True
+            review.close()
         (OUT/'browser-results.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(report))
         browser.close()

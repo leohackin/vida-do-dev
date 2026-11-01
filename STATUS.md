@@ -1,3 +1,57 @@
+# Integração artística da v0.7 — 01/11/2026
+
+## Resultado implementado
+
+- `assets/office-clean.png` substitui o fundo com pessoas, gatos e balões pintados. Cadeiras, sofá, mesas e piso foram reconstruídos; os cinco atores do motor são agora as únicas pessoas da cena.
+- O letreiro **SONHE / PLANEJE / CÓDIGO / ENTREGUE / REPITA** foi corrigido. A marca VIDA DO DEV é desenhada por um recorte exato de `assets/reference-original.png`, evitando a versão alterada gerada no clean plate.
+- `assets/dev-directional.png` fornece caminhada do Dev em sudeste, sudoeste, nordeste e noroeste. O motor escolhe a direção por `dx/dy` e usa quatro quadros por direção. Café, digitação, sentar e levantar continuam no sheet de interação anterior.
+- A referência aprovada permanece byte a byte intacta e também funciona como fonte explícita da marca.
+
+## Evidências locais
+
+- `python tools/test_art_assets.py`: três verificações aprovadas — hash da referência, dimensões/recortes dos PNGs e exportação HTML independente.
+- `node --test --test-isolation=none tools/test_navigation.cjs tools/test_engine.cjs`: **24 testes aprovados**, incluindo as quatro direções do Dev e as três simulações de tráfego.
+- Chromium 154: 35 percursos, chegada por `requestAnimationFrame`, pausa/retomada, fundo limpo, fontes de imagem e prévia independente aprovados; nenhuma exceção da página.
+- Inspeção de `actors.png`, `floor-map.png` e `dev-directions.png`: pessoas/gatos estáticos ausentes, cinco atores móveis visíveis, marca preservada e quatro vistas do Dev distinguíveis. A inspeção visual é evidência técnica, não aprovação artística humana.
+- O CI executará lógica/arte e navegador em Chromium, Firefox e WebKit antes de qualquer merge desta iteração.
+
+## Limites que permanecem
+
+O mapa de colisões ainda é manual. O clean plate é uma reconstrução, não uma separação completa de cada móvel em camadas. As máscaras de oclusão existentes continuam aproximadas. Os demais personagens reutilizam variantes do Visitante e não possuem quatro direções próprias. As poses de interação do Dev ainda são procedurais. Safari real, dispositivos físicos, hardware alvo e aprovação artística humana permanecem fora da evidência automatizada.
+
+As fases 2 e 3 avançam materialmente, mas permanecem parciais nesses pontos. A fase 4 possui cobertura nos três motores via CI, ainda sem equivalência a dispositivos físicos ou aprovação artística.
+
+---
+
+# Correção da prévia isolada — 31/10/2026
+
+O HTML modular da revisão buscava JSON e PNGs por caminhos relativos. Ao disponibilizar apenas o HTML, a página podia abrir enquanto os metadados retornavam HTTP 404 e as imagens ficavam quebradas. O teste anterior servia o repositório completo e não cobria essa forma de abertura.
+
+Adicionado `tools/build_art_review.py`, que exporta `artifacts/art-review-standalone.html` com os metadados e os bytes originais das imagens incorporados. Nenhum asset é regenerado ou modificado. Os critérios também ficam no arquivo, e o link para o código aponta ao GitHub. A página modular continua disponível para servir a raiz completa do repositório.
+
+Validação local: Chromium 154, 35 percursos e controles do jogo aprovados; a nova regressão disponibiliza **somente o HTML exportado**, bloqueando todos os outros recursos. Quatro prévias, todas as imagens, seleção de quadro e comparação por corte passaram, sem erros da página e sem requisições a arquivos externos. O teste foi incluído na suíte de navegador dos três motores; o CI deste commit ainda precisa confirmar Firefox e WebKit. A correção da abertura não constitui aprovação dos assets artísticos, que permanecem em rascunho.
+
+---
+
+# Propostas de arte e camadas — 31/10/2026
+
+Foi produzida uma proposta RGBA do Dev em quatro direções, seguida de uma tentativa de reparo do ciclo. Ela está em `assets/proposals/`, com recortes medidos e uma página de inspeção em `tools/art_review.html`. A referência e todos os assets usados na cena permanecem intactos; a proposta não é carregada pelo motor.
+
+**Resultado da revisão: reprovada para produção.** As vistas de costas são novas, mas os passos 1/3 ainda não alternam claramente a perna dianteira em todas as linhas. A grade e as âncoras também não são uniformes. A página alinha os recortes apenas para inspeção e não corrige a anatomia. As proporções mais arredondadas precisam de revisão contra a ilustração. Não há aprovação artística humana e não foram produzidos clean plate aprovado, móveis em camadas ou poses de interação finais.
+
+Validação da ferramenta de revisão: HTTP + Chromium, quatro prévias carregadas, pausa e seleção de quadro verificadas, captura `artifacts/art-review.png` inspecionada, nenhuma exceção da página. Isso valida a ferramenta e permite avaliar os defeitos; não aprova o atlas nem representa teste do atlas na cena. A proposta permanece em PR de rascunho para reparo e revisão, sem integrar arte reprovada na main.
+
+Também foi gerada uma proposta de clean plate de 1536 × 1024, em arquivo separado: pessoas, gatos e balões removidos, cadeiras e piso reconstruídos. A revisão identificou perda do logo inferior, alteração de letras em SONHE e simplificação de objetos de reunião. Portanto ela também foi reprovada para substituição direta. A página de inspeção inclui comparação por corte com a referência. Não foram produzidas máscaras finais nem validado o motor sobre esse fundo. A referência e a cena publicada permanecem intactas.
+
+Uma tentativa adicional de reparo do clean plate não resolveu o letreiro e recriou o logo com forma/iluminação diferentes. Foi inspecionada e rejeitada, preservando a proposta anterior como evidência. As tentativas de geração/reparo não produziram assets que passem nos critérios de ciclo anatômico e fidelidade da marca. Não há justificativa para integrar esses arquivos ao motor; o reparo artístico e as camadas finais continuam abertos.
+
+As fases 2 e 3 continuam parciais. A próxima entrega artística precisa de um ciclo com pernas alternadas, poses de passagem e âncoras coerentes, além das transições de interação. Os requisitos concretos estão em `assets/proposals/README.md`. A revisão humana da direção artística permanece pendente, distinta dos testes de lógica e navegador.
+
+
+A correção de continuidade foi integrada pelo PR #4 em `c36a99a`, após os oito checks de push/PR aprovados: 23 testes de lógica e suíte em Chromium, Firefox e WebKit. A main contém os PRs #2, #3 e #4. Este rascunho preserva integralmente essas correções; a única entrega artística nova permanece fora do motor.
+
+---
+
 # Correção de continuidade das rotinas — 31/10/2026
 
 A validação em três motores foi integrada pelo PR #3 (`1a1ef3f`) após oito checks aprovados no commit `d87b7e6`: lógica e Chromium/Firefox/WebKit, nos eventos de push e PR. Foram 35 percursos por motor, chegada por requestAnimationFrame e pausa/retomada. As falhas locais de lançamento de Firefox/WebKit não foram tratadas como aprovação; os resultados aprovados vieram do CI.
