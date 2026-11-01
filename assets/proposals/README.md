@@ -6,7 +6,20 @@ As imagens de entrada não foram modificadas. O arquivo é RGBA de 1254 × 1254.
 `dev-directional-review.json` registra dezesseis recortes medidos pela transparência;
 é metadado de inspeção, não um manifesto de animação aprovado.
 
-Abra `tools/art_review.html` por HTTP, servindo a raiz do repositório. A página
+Para abrir ou compartilhar apenas um arquivo, execute:
+
+```sh
+python tools/build_art_review.py
+```
+
+Abra `artifacts/art-review-standalone.html`. Essa exportação inclui metadados e
+os bytes originais dos PNGs, sem depender de caminhos relativos, servidor ou
+conexão. O CI também inclui esse HTML no artefato de evidências. O script apenas
+empacota a página; não regenera nem modifica imagens.
+
+A página modular `tools/art_review.html` exige HTTP servindo a raiz completa do
+repositório. Copiar apenas essa página para outro endereço deixa metadados e
+imagens indisponíveis (404). A página
 mostra as quatro direções com reprodução, pausa, seleção de quadro e comparação
 com a referência intacta. Nenhum arquivo desta pasta é carregado por `office.js`.
 

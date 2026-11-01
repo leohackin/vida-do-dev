@@ -30,7 +30,7 @@ sem substituir os sprites do jogo ou a referência original.</p>
 <p>Os recortes abaixo usam os limites reais de cada silhueta e alinham os pés.
 Essa normalização serve à inspeção; não corrige a anatomia nem produz aprovação artística.</p>
 <details><summary>Ver atlas bruto, com transparência e espaçamento originais</summary>
- <img src="../assets/proposals/dev-directional-review.png" alt="Atlas proposto com dezesseis poses do Dev">
+ <img id="atlasSource" src="../assets/proposals/dev-directional-review.png" alt="Atlas proposto com dezesseis poses do Dev">
 </details>
 <h2>Fundo sem personagens — proposta para camadas</h2>
 <p class="notice">Pessoas, gatos e balões foram removidos, com reconstrução de assentos e piso.
@@ -79,10 +79,14 @@ function loop(time){
  requestAnimationFrame(loop);
 }
 async function start(){
- const response=await fetch('../assets/proposals/dev-directional-review.json');
- if(!response.ok)throw Error(`Metadados: HTTP ${response.status}`);
- metadata=await response.json();
- atlas=new Image();atlas.src='../assets/proposals/'+metadata.image;await atlas.decode();
+ const bundle=document.getElementById('art-review-bundle');
+ if(bundle)metadata=JSON.parse(bundle.textContent);
+ else{
+  const response=await fetch('../assets/proposals/dev-directional-review.json');
+  if(!response.ok)throw Error(`Metadados: HTTP ${response.status}. Abra a exportação HTML independente ou sirva a raiz completa do repositório.`);
+  metadata=await response.json();
+ }
+ atlas=document.getElementById('atlasSource');await atlas.decode();
  for(const direction of metadata.directions){
   const figure=document.createElement('figure'),caption=document.createElement('figcaption');
   caption.textContent=direction;const canvas=document.createElement('canvas');

@@ -1,3 +1,13 @@
+# Correção da prévia isolada — 31/10/2026
+
+O HTML modular da revisão buscava JSON e PNGs por caminhos relativos. Ao disponibilizar apenas o HTML, a página podia abrir enquanto os metadados retornavam HTTP 404 e as imagens ficavam quebradas. O teste anterior servia o repositório completo e não cobria essa forma de abertura.
+
+Adicionado `tools/build_art_review.py`, que exporta `artifacts/art-review-standalone.html` com os metadados e os bytes originais das imagens incorporados. Nenhum asset é regenerado ou modificado. Os critérios também ficam no arquivo, e o link para o código aponta ao GitHub. A página modular continua disponível para servir a raiz completa do repositório.
+
+Validação local: Chromium 154, 35 percursos e controles do jogo aprovados; a nova regressão disponibiliza **somente o HTML exportado**, bloqueando todos os outros recursos. Quatro prévias, todas as imagens, seleção de quadro e comparação por corte passaram, sem erros da página e sem requisições a arquivos externos. O teste foi incluído na suíte de navegador dos três motores; o CI deste commit ainda precisa confirmar Firefox e WebKit. A correção da abertura não constitui aprovação dos assets artísticos, que permanecem em rascunho.
+
+---
+
 # Propostas de arte e camadas — 31/10/2026
 
 Foi produzida uma proposta RGBA do Dev em quatro direções, seguida de uma tentativa de reparo do ciclo. Ela está em `assets/proposals/`, com recortes medidos e uma página de inspeção em `tools/art_review.html`. A referência e todos os assets usados na cena permanecem intactos; a proposta não é carregada pelo motor.

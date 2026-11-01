@@ -1,5 +1,9 @@
 # Vida do Dev — office.exe v0.6
 
+Para a prévia de arte em arquivo único: `python tools/build_art_review.py` e abra
+`artifacts/art-review-standalone.html`. Ela inclui imagens e metadados e pode ser
+aberta fora da pasta do repositório, sem servidor. A arte continua em revisão.
+
 Esta versão evolui a v0.5 com mapa de obstáculos, posições individuais, filas, transições do Dev e PM independente. As quatro fases continuam parciais. Consulte `STATUS.md` para testes, fases e limitações.
 
 Teste de lógica: `node --test tools/test_navigation.cjs tools/test_engine.cjs` (Node.js 18 ou superior).
