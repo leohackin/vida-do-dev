@@ -1,3 +1,11 @@
+# Centro da almofada esquerda na v0.13 — 01/11/2026
+
+Uma comparação controlada de quatro âncoras revelou que o Visitante estava
+sobre a emenda entre sofá e pufe. O slot foi deslocado 25 px para a esquerda,
+ao centro da almofada real, mantendo a composição aprovada do Dev à direita.
+
+---
+
 # Âncora individual do Visitante da v0.12 — 01/11/2026
 
 O Visitante possui margem transparente diferente do Dev no atlas sentado. Seu
