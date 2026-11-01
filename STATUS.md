@@ -1,3 +1,15 @@
+# Proposta de arte direcional — 31/10/2026
+
+Foi produzida uma proposta RGBA do Dev em quatro direções, seguida de uma tentativa de reparo do ciclo. Ela está em `assets/proposals/`, com recortes medidos e uma página de inspeção em `tools/art_review.html`. A referência e todos os assets usados na cena permanecem intactos; a proposta não é carregada pelo motor.
+
+**Resultado da revisão: reprovada para produção.** As vistas de costas são novas, mas os passos 1/3 ainda não alternam claramente a perna dianteira em todas as linhas. A grade e as âncoras também não são uniformes. A página alinha os recortes apenas para inspeção e não corrige a anatomia. As proporções mais arredondadas precisam de revisão contra a ilustração. Não há aprovação artística humana e não foram produzidos clean plate, móveis em camadas ou poses de interação finais.
+
+Validação da ferramenta de revisão: HTTP + Chromium, quatro prévias carregadas, pausa e seleção de quadro verificadas, captura `artifacts/art-review.png` inspecionada, nenhuma exceção da página. Isso valida a ferramenta e permite avaliar os defeitos; não aprova o atlas nem representa teste do atlas na cena. A proposta permanece em PR de rascunho para reparo e revisão, sem integrar arte reprovada na main.
+
+As fases 2 e 3 continuam parciais. A próxima entrega artística precisa de um ciclo com pernas alternadas, poses de passagem e âncoras coerentes, além das transições de interação. Os requisitos concretos estão em `assets/proposals/README.md`. A revisão humana da direção artística permanece pendente, distinta dos testes de lógica e navegador.
+
+---
+
 # Iteração de validação de navegador — 31/10/2026
 
 A v0.6 foi integrada pelo PR #2 em `8f8f782f9ae1344738dd2d4aa7a64030d6fdd8fc`, após revisão local com correção de FIFO e todos os quatro checks de push/PR aprovados. Não houve push direto na main.
