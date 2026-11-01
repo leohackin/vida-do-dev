@@ -1,4 +1,4 @@
-# Proposta direcional do Dev — revisão, sem uso no jogo
+# Propostas de arte — revisão, sem uso no jogo
 
 `dev-directional-review.png` foi gerado a partir da referência original e da
 identidade do Dev existente, seguido de uma tentativa de corrigir o ciclo.
@@ -33,3 +33,22 @@ plate e as camadas de móveis continua sendo uma entrega separada, necessária
 para assentos físicos e remoção das pessoas/gatos pintados no fundo.
 
 Esta proposta torna a avaliação concreta; não conclui as fases 2 ou 3.
+
+## Proposta de fundo sem personagens
+
+`clean-plate-review.png` é uma proposta gerada de fundo vazio, RGBA de
+1536 × 1024, preservada como arquivo separado. Pessoas, gatos e balões foram
+removidos; cadeiras, sofá e piso foram reconstruídos. A ferramenta de revisão
+inclui comparação por corte vertical com a referência.
+
+**Reprovada para substituição direta:** o logo VIDA DO DEV inferior desapareceu,
+o letreiro SONHE sofreu alteração de letras e objetos de reunião foram
+simplificados. Há reconstruções que ainda precisam de comparação detalhada.
+São defeitos observados, não diferenças aprovadas. Não foram produzidas máscaras
+de móveis nem validado oclusão, colisões ou assentos sobre esse fundo. Nenhum
+arquivo da referência ou da cena atual foi modificado.
+
+Para uso na cena, preservar a marca e os letreiros da referência, revisar objetos
+reconstruídos e produzir as camadas/máscaras de primeiro plano. Comparação visual
+do fundo vazio não equivale a aprovação artística nem a validação dos atores
+sentados. A fase 3 continua parcial.

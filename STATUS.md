@@ -1,10 +1,12 @@
-# Proposta de arte direcional — 31/10/2026
+# Propostas de arte e camadas — 31/10/2026
 
 Foi produzida uma proposta RGBA do Dev em quatro direções, seguida de uma tentativa de reparo do ciclo. Ela está em `assets/proposals/`, com recortes medidos e uma página de inspeção em `tools/art_review.html`. A referência e todos os assets usados na cena permanecem intactos; a proposta não é carregada pelo motor.
 
-**Resultado da revisão: reprovada para produção.** As vistas de costas são novas, mas os passos 1/3 ainda não alternam claramente a perna dianteira em todas as linhas. A grade e as âncoras também não são uniformes. A página alinha os recortes apenas para inspeção e não corrige a anatomia. As proporções mais arredondadas precisam de revisão contra a ilustração. Não há aprovação artística humana e não foram produzidos clean plate, móveis em camadas ou poses de interação finais.
+**Resultado da revisão: reprovada para produção.** As vistas de costas são novas, mas os passos 1/3 ainda não alternam claramente a perna dianteira em todas as linhas. A grade e as âncoras também não são uniformes. A página alinha os recortes apenas para inspeção e não corrige a anatomia. As proporções mais arredondadas precisam de revisão contra a ilustração. Não há aprovação artística humana e não foram produzidos clean plate aprovado, móveis em camadas ou poses de interação finais.
 
 Validação da ferramenta de revisão: HTTP + Chromium, quatro prévias carregadas, pausa e seleção de quadro verificadas, captura `artifacts/art-review.png` inspecionada, nenhuma exceção da página. Isso valida a ferramenta e permite avaliar os defeitos; não aprova o atlas nem representa teste do atlas na cena. A proposta permanece em PR de rascunho para reparo e revisão, sem integrar arte reprovada na main.
+
+Também foi gerada uma proposta de clean plate de 1536 × 1024, em arquivo separado: pessoas, gatos e balões removidos, cadeiras e piso reconstruídos. A revisão identificou perda do logo inferior, alteração de letras em SONHE e simplificação de objetos de reunião. Portanto ela também foi reprovada para substituição direta. A página de inspeção inclui comparação por corte com a referência. Não foram produzidas máscaras finais nem validado o motor sobre esse fundo. A referência e a cena publicada permanecem intactas.
 
 As fases 2 e 3 continuam parciais. A próxima entrega artística precisa de um ciclo com pernas alternadas, poses de passagem e âncoras coerentes, além das transições de interação. Os requisitos concretos estão em `assets/proposals/README.md`. A revisão humana da direção artística permanece pendente, distinta dos testes de lógica e navegador.
 

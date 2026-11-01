@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vida do Dev — revisão do atlas direcional</title>
+<title>Vida do Dev — revisão de arte e camadas</title>
 <style>
 body{margin:24px auto;padding:0 20px;max-width:1100px;background:#1c1c22;color:#eee;font:16px/1.5 system-ui}
 h1{font-size:26px}h2{font-size:19px}button,input{font:inherit}button{padding:6px 16px}
@@ -11,6 +11,8 @@ h1{font-size:26px}h2{font-size:19px}button,input{font:inherit}button{padding:6px
 figure{margin:0;text-align:center}canvas{width:100%;background:repeating-conic-gradient(#393942 0 25%,#303038 0 50%) 0/20px 20px}
 .controls{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:20px 0}img{max-width:100%;height:auto}
 a{color:#ffdb75}#error{color:#ffaaa0}
+.comparison{position:relative;line-height:0;background:#26262d}.comparison img{display:block;width:100%}
+.comparison .candidate{position:absolute;inset:0;clip-path:inset(0 0 0 50%)}
 </style>
 <h1>Dev em quatro direções — proposta para revisão</h1>
 <p class="notice">Este atlas está <strong>reprovado para uso na cena</strong> nesta revisão técnica.
@@ -30,6 +32,17 @@ Essa normalização serve à inspeção; não corrige a anatomia nem produz apro
 <details><summary>Ver atlas bruto, com transparência e espaçamento originais</summary>
  <img src="../assets/proposals/dev-directional-review.png" alt="Atlas proposto com dezesseis poses do Dev">
 </details>
+<h2>Fundo sem personagens — proposta para camadas</h2>
+<p class="notice">Pessoas, gatos e balões foram removidos, com reconstrução de assentos e piso.
+A proposta também removeu o logo inferior e alterou letras do letreiro: <strong>não aprovada para substituir o fundo</strong>.
+Ainda não há máscaras de oclusão, assentos interativos ou validação dessa arte no motor.</p>
+<label>Comparação por corte: referência à esquerda, proposta à direita
+ <input id="compare" type="range" min="0" max="100" value="50">
+</label>
+<div class="comparison">
+ <img src="../assets/reference-original.png" alt="Referência original para comparação">
+ <img class="candidate" src="../assets/proposals/clean-plate-review.png" alt="Proposta experimental do escritório sem personagens">
+</div>
 <h2>Referência preservada</h2>
 <p>Comparar identidade, proporções, traço e textura com os personagens da ilustração.</p>
 <img src="../assets/reference-original.png" alt="Ilustração original do escritório Vida do Dev">
@@ -43,6 +56,9 @@ document.getElementById('play').onclick=()=>{
  playing=!playing;document.getElementById('play').textContent=playing?'Pausar':'Continuar';
 };
 frame.oninput=()=>{playing=false;document.getElementById('play').textContent='Continuar';draw();};
+document.getElementById('compare').oninput=event=>{
+ document.querySelector('.candidate').style.clipPath=`inset(0 0 0 ${event.target.value}%)`;
+};
 function draw(){
  if(!metadata)return;
  const index=Number(frame.value);
