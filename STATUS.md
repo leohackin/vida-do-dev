@@ -1,3 +1,11 @@
+# Âncora individual do Visitante da v0.12 — 01/11/2026
+
+O Visitante possui margem transparente diferente do Dev no atlas sentado. Seu
+slot recebeu compensação vertical própria para apoiar quadril na almofada e
+levar joelhos e pés até a borda frontal, sem alterar o Dev já aprovado.
+
+---
+
 # Corpo completo no sofá da v0.11 — 01/11/2026
 
 A máscara frontal do sofá ocultava joelhos e pernas do atlas sentado, deixando
