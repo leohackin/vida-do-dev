@@ -7,8 +7,11 @@ import json, os, shutil
 from playwright.sync_api import sync_playwright
 
 BASE = Path(__file__).resolve().parent.parent
-OUT = BASE / 'artifacts'
-OUT.mkdir(exist_ok=True)
+ENGINE = os.environ.get('BROWSER_ENGINE', 'chromium')
+if ENGINE not in ('chromium', 'firefox', 'webkit'):
+    raise ValueError(f'Unsupported BROWSER_ENGINE: {ENGINE}')
+OUT = BASE / 'artifacts' / ENGINE
+OUT.mkdir(parents=True, exist_ok=True)
 class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -16,8 +19,11 @@ server = ThreadingHTTPServer(('127.0.0.1', 0), partial(QuietHandler, directory=s
 Thread(target=server.serve_forever, daemon=True).start()
 try:
     with sync_playwright() as p:
-        executable = os.environ.get('BROWSER_EXECUTABLE') or shutil.which('chromium')
-        browser = p.chromium.launch(headless=True, executable_path=executable, args=['--no-sandbox'])
+        executable = os.environ.get('BROWSER_EXECUTABLE')
+        if ENGINE == 'chromium':
+            executable = executable or shutil.which('chromium')
+        browser = getattr(p, ENGINE).launch(headless=True, executable_path=executable, timeout=45000,
+                                           args=['--no-sandbox'] if ENGINE == 'chromium' else [])
         page = browser.new_page(viewport={'width':1536,'height':1200}, reduced_motion='reduce')
         errors=[]
         page.on('pageerror', lambda e: errors.append(str(e)))
@@ -37,6 +43,23 @@ try:
         page.locator('#zoomIn').click()
         assert page.locator('#zoomLabel').inner_text() == '120%'
         page.locator('#resetZoom').click()
+        # Exercise the actual RAF clock and pause handler before fast-forwarding routes.
+        page.evaluate('''()=>{const e=__officeDebug;
+          for(const a of e.actors){a.active=false;e.slots.release(a.id);e.cancelQueue(a.id);}
+          const a=e.actors[0];e.sendTo(a,'desk');e.state.running=true;
+        }''')
+        before = page.evaluate('({x:__officeDebug.actors[0].x,y:__officeDebug.actors[0].y})')
+        page.wait_for_function('''p=>{const a=__officeDebug.actors[0];
+          return Math.hypot(a.x-p.x,a.y-p.y)>10;}''', arg=before)
+        page.locator('#pause').click()
+        assert not page.evaluate('__officeDebug.state.running')
+        frozen = page.evaluate('JSON.stringify(__officeDebug.actors)')
+        page.wait_for_timeout(250)
+        assert page.evaluate('JSON.stringify(__officeDebug.actors)') == frozen, 'pause changed actors'
+        page.locator('#pause').click()
+        page.wait_for_function('!__officeDebug.actors[0].walking', timeout=15000)
+        page.locator('#pause').click()
+        assert page.evaluate('__officeDebug.actors[0].pose') == 'type'
         # Walk each actor through all destinations in the real engine, rendering every arrival.
         page.evaluate('''()=>{
           const e=__officeDebug;e.state.running=true;
@@ -52,7 +75,7 @@ try:
         }''')
         # Inspect all existing sheets/poses together, without timer randomness.
         page.evaluate('''()=>{const e=__officeDebug;let i=0;
-         for(const a of e.actors){a.active=true;a.visible=true;a.walking=false;a.transition=null;a.wait=Infinity;
+         for(const a of e.actors){a.active=true;a.visible=true;a.walking=false;a.transition=null;a.wait=Infinity;a.bubble=null;
           [a.x,a.y]=[[600,350],[900,628],[888,744],[1050,506],[1090,604]][i];
           a.pose=['coffee','sit','type','idle','walk'][i++];}e.render();}''')
         page.screenshot(path=str(OUT/'actors.png'),full_page=True)
@@ -79,7 +102,8 @@ try:
         # Rendering measurement includes software Canvas on this machine only.
         timings=page.evaluate('''()=>{const t=[];for(let i=0;i<120;i++){
          const start=performance.now();__officeDebug.render();t.push(performance.now()-start);}return t.sort((a,b)=>a-b);}''')
-        report={'browser':browser.version,'functional_cases':35,'page_errors':errors,
+        report={'engine':ENGINE,'browser':browser.version,'functional_cases':35,
+                'raf_journey':True,'pause_resume':True,'page_errors':errors,
                 'render_ms_median':timings[60],'render_ms_p95':timings[114]}
         (OUT/'browser-results.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(report))
