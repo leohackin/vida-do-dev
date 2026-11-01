@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.9
+/* Vida do Dev · illustrated office engine v0.10
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -7,7 +7,7 @@
 const cv=document.getElementById('scene'),ctx=cv.getContext('2d',{alpha:true});
 const $=id=>document.getElementById(id);
 const W=1536,H=1024,images={};
-const imageSources={background:'assets/office-clean.png',brand:'assets/reference-original.png',guest:'assets/guest-walksheet.png',dev:'assets/dev-sheet.png',devMove:'assets/dev-directional.png',ana:'assets/ana-sheet.png',ops:'assets/ops-sheet.png',pm:'assets/pm-sheet.png'};
+const imageSources={background:'assets/office-clean.png',brand:'assets/reference-original.png',guest:'assets/guest-walksheet.png',dev:'assets/dev-sheet.png',devMove:'assets/dev-directional.png',seated:'assets/seated-atlas.png',ana:'assets/ana-sheet.png',ops:'assets/ops-sheet.png',pm:'assets/pm-sheet.png'};
 let loaded=0;Object.entries(imageSources).forEach(([name,url])=>{const img=new Image();img.src=url;img.onload=()=>{loaded++;};img.onerror=()=>{console.error('Erro ao carregar sprite',url);};images[name]=img;});
 // Hand-authored foot-space map: furniture is solid, targets remain on visible floor.
 // Enclosed meeting room and occupied seats are approached from the corridor.
@@ -47,9 +47,9 @@ const interactionSlots={
 // to the reconstructed chair or sofa without moving collision geometry inside furniture.
 const interactionVisual={
  'desk:0':[1030,790],'desk:1':[620,840],
- 'meeting:0':[1200,350],'meeting:1':[1300,365],
- 'lounge:0':[695,465],'lounge:1':[770,465],
- 'arcade:0':[1245,650]
+ 'meeting:0':[1200,375],'meeting:1':[1300,390],
+ 'lounge:0':[700,500],'lounge:1':[780,510],
+ 'arcade:0':[1350,675]
 };
 const npcEvents=[
  {name:'SÓ MAIS UM COMMIT',desc:'O Dev jurou que este é o último de hoje.',lines:['só mais um commit...','o último. agora vai.'],dest:'desk'},
@@ -143,7 +143,7 @@ function playEvent(custom){let ev=custom||choose(npcEvents);setStatus(ev.name,ev
  const lead=findActor(state.selected)||actors[0];sendTo(lead,ev.dest);speech(lead,choose(ev.lines),5);state.eventTimer=rand(19,30);
  for(let i=0;i<25;i++)state.fx.push({x:rand(700,1330),y:rand(280,820),dy:rand(15,50),t:rand(1,2.6),sz:rand(2,5),col:choose(['#ffd45e','#93dcff','#e9a3d3','#f6faf8'])});
 }
-function arrive(a){a.walking=false;a.route=[];let d=destinations[a.goal]||destinations.desk;a.pose=d.action;a.transition=['sit','type'].includes(d.action)?{kind:'sit',t:0,duration:.35}:null;a.wait=rand(5,12);if(a.id==='dev')a.wait+=2;
+function arrive(a){a.walking=false;a.route=[];let d=destinations[a.goal]||destinations.desk;a.pose=d.action;a.transition=['sit','type'].includes(d.action)?{kind:'sit',t:0,duration:.5}:null;a.wait=rand(5,12);if(a.id==='dev')a.wait+=2;
  if(a.goal==='bathroom'){a.visible=false;a.wait=rand(3,6);}
  else {a.visible=true;a.alpha=1; if(Math.random()<.72)speech(a,d.bubble,rand(3,5));
   const colleague=actors.find(o=>o!==a&&o.active&&o.visible&&!o.walking&&o.goal===a.goal&&dist([a.x,a.y],[o.x,o.y])<100);
@@ -176,14 +176,28 @@ function tick(dt){if(!state.running)return;dt=Math.min(dt,.08)*state.speed;state
  }
  for(let f of state.fx){f.y-=f.dy*dt;f.t-=dt;f.x+=Math.sin(state.timer*3+f.y)*dt*18;}state.fx=state.fx.filter(f=>f.t>0);
 }
-function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!im?.complete||!im.naturalWidth)return;
- const sitting=['sit','type'].includes(a.pose)&&!a.walking,typing=a.pose==='type'&&!a.walking;
+function seatRenderState(a,sitting){
  const progress=a.transition?Math.min(1,a.transition.t/a.transition.duration):1;
  const seated=a.transition?(a.transition.kind==='sit'?progress:1-progress):(sitting?1:0);
+ // A straight interpolation to a chair visibly crossed the furniture between
+ // its safe approach point and the authored seat. Change depth while hidden:
+ // fade at the approach, switch layers at zero opacity, then reveal in place.
+ const visualSeated=a.transition?(seated>=.5?1:0):seated;
+ const renderAlpha=a.alpha*(a.transition?Math.abs(progress*2-1):1);
  const visual=interactionVisual[a.slot];
- let x=visual&&seated?a.x+(visual[0]-a.x)*seated:a.x;
- let y=visual&&seated?a.y+(visual[1]-a.y)*seated:a.y;
+ return {progress,visualSeated,renderAlpha,x:visual&&visualSeated?visual[0]:a.x,y:visual&&visualSeated?visual[1]:a.y};
+}
+function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!im?.complete||!im.naturalWidth)return;
+ const sitting=['sit','type'].includes(a.pose)&&!a.walking,typing=a.pose==='type'&&!a.walking;
+ let {visualSeated,renderAlpha,x,y}=seatRenderState(a,sitting);
  let t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
+ if(visualSeated&&images.seated?.complete&&images.seated.naturalWidth){
+  const cells={guest:[0,434],dev:[434,435],ana:[869,434],ops:[1303,435],pm:[1738,434]};
+  const [sx,sw]=cells[a.id],sh=724,targetHeight=138,targetWidth=sw/sh*targetHeight;
+  ctx.save();ctx.globalAlpha=renderAlpha;ctx.fillStyle='rgba(29,26,25,.27)';ctx.beginPath();ctx.ellipse(x,y+1,28,6,0,0,2*Math.PI);ctx.fill();
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(images.seated,sx,0,sw,sh,x-targetWidth/2,y-targetHeight+phase,targetWidth,targetHeight);ctx.restore();
+  return;
+ }
  let frameX=step,frameY=0,sw=78,sh=183,dw=78,dh=183;
  if(a.id==='dev'&&images.devMove?.complete&&images.devMove.naturalWidth){
   const frames=[
@@ -198,16 +212,10 @@ function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!i
   // generous transparent margins. Match the visible character scale rather
   // than the raw frame height so Dev belongs in the same perspective.
   let targetHeight=148,targetWidth=sourceWidth/sourceHeight*targetHeight;
-  targetHeight*=1-.12*seated;
-  ctx.save();ctx.globalAlpha=a.alpha;ctx.fillStyle='rgba(29,26,25,.30)';ctx.beginPath();ctx.ellipse(x,y+1,25,6,0,0,2*Math.PI);ctx.fill();
-  ctx.translate(x-targetWidth/2,y-targetHeight+phase);ctx.translate(0,27*seated);ctx.imageSmoothingEnabled=true;
-  if(seated>0){
-   const top=Math.round(sourceHeight*.69),leg=Math.round(sourceHeight*.30);
-   ctx.drawImage(images.devMove,sx,sy,sourceWidth,top,0,0,targetWidth,targetHeight*(.69+.10*seated));
-   ctx.save();ctx.translate(targetWidth*.48,targetHeight*(.69+.09*seated));ctx.rotate(-.25*seated);
-   ctx.drawImage(images.devMove,sx+sourceWidth*.19,sy+top,sourceWidth*.56,leg,0,0,targetWidth*.57,targetHeight*(.30-.11*seated));ctx.restore();
-   ctx.drawImage(images.devMove,sx+sourceWidth*.48,sy+Math.round(sourceHeight*.81),sourceWidth*.33,Math.round(sourceHeight*.17),targetWidth*(.48+.16*seated),targetHeight*(.81+.03*seated),targetWidth*(.33-.05*seated),targetHeight*(.17-.02*seated));
-  }else ctx.drawImage(images.devMove,sx,sy,sourceWidth,sourceHeight,0,0,targetWidth,targetHeight);
+  targetHeight*=1-.18*visualSeated;
+  ctx.save();ctx.globalAlpha=renderAlpha;ctx.fillStyle='rgba(29,26,25,.30)';ctx.beginPath();ctx.ellipse(x,y+1,25,6,0,0,2*Math.PI);ctx.fill();
+  ctx.translate(x-targetWidth/2,y-targetHeight+phase);ctx.translate(0,34*visualSeated);ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(images.devMove,sx,sy,sourceWidth,sourceHeight,0,0,targetWidth,targetHeight);
   if(a.pose==='coffee'&&!a.walking){
    const mugX=targetWidth*.70,mugY=targetHeight*.56;
    ctx.fillStyle='#f4f1e8';ctx.strokeStyle='#313238';ctx.lineWidth=1.5;
@@ -222,23 +230,15 @@ function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!i
   frameY=a.pose==='walk'?1:a.pose==='coffee'?2:a.pose==='type'?3:0;
   frameX=a.walking?step:(a.pose==='coffee'||a.pose==='type'?Math.floor(t*4)%6:0);
  }else{frameY=a.dir===1?1:0;frameX=a.walking?step:0;}
- dh*=1-.12*seated;y-=15*seated;
+ dh*=1-.18*visualSeated;y-=15*visualSeated;
  if(typing){y+=Math.sin(t*8)*1.3;}
  const flicker=(a.id==='dev'&&!a.walking&&a.pose==='idle'&&Math.sin(t*1.47)>.996); // blink
- ctx.save();ctx.globalAlpha=a.alpha;
+ ctx.save();ctx.globalAlpha=renderAlpha;
  // soft contact shadow, no dark rectangle around transparent sprites
  ctx.fillStyle='rgba(29,26,25,.30)';ctx.beginPath();ctx.ellipse(x,y+1,24*(sitting?1.25:1),6,0,0,2*Math.PI);ctx.fill();
- ctx.translate(x-dw/2,y-dh+phase);ctx.translate(0,27*seated);
+ ctx.translate(x-dw/2,y-dh+phase);ctx.translate(0,34*visualSeated);
  ctx.imageSmoothingEnabled=true;
- if(seated>0){
-    // Procedural seated silhouette: upper body stays upright, thighs bend horizontally,
-    // calves and shoes drop from the seat. Reuses pixels from the source illustration.
-    const top=Math.round(sh*.69),leg=Math.round(sh*.30);
-    ctx.drawImage(im,frameX*sw,frameY*sh,sw,top,0,0,dw,dh*(.69+.10*seated));
-    ctx.save();ctx.translate(dw*.48,dh*(.69+.09*seated));ctx.rotate(-.25*seated);
-    ctx.drawImage(im,frameX*sw+sw*.19,frameY*sh+top,sw*.56,leg,0,0,dw*.57,dh*(.30-.11*seated));ctx.restore();
-    ctx.drawImage(im,frameX*sw+sw*.48,frameY*sh+Math.round(sh*.81),sw*.33,Math.round(sh*.17),dw*(.48+.16*seated),dh*(.81+.03*seated),dw*(.33-.05*seated),dh*(.17-.02*seated));
-   }else ctx.drawImage(im,frameX*sw,frameY*sh,sw,sh,0,0,dw,dh);
+ ctx.drawImage(im,frameX*sw,frameY*sh,sw,sh,0,0,dw,dh);
  // tiny typing keyboard motion superimposed only while at desk
  if(typing){ctx.fillStyle='#ecbc83';ctx.fillRect(dw*.53,dh*.60+Math.sin(t*12)*2,8,3);}
  if(flicker){ctx.strokeStyle='#201a18';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dw*.42,dh*.36);ctx.lineTo(dw*.61,dh*.36);ctx.stroke();}
@@ -254,7 +254,15 @@ const coverLayers=[
  {name:'desk-right',poly:[[965,720],[1215,720],[1270,820],[995,855]],pred:a=>a.slot==='desk:0'&&!a.walking},
  {name:'desk-lower',poly:[[525,780],[785,780],[845,900],[590,950]],pred:a=>a.slot==='desk:1'&&!a.walking}
 ];
-function drawOcclusion(a){if(!images.background?.complete)return;for(const cover of coverLayers){if(!cover.pred(a))continue;ctx.save();ctx.beginPath();let poly=cover.poly;ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.clip();ctx.drawImage(images.background,0,0,W,H);ctx.restore();}}
+const obstacleDepth=obstacles.map(poly=>({poly,minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),maxY:Math.max(...poly.map(p=>p[1]))}));
+function redrawBackgroundPoly(poly){ctx.save();ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.clip();ctx.drawImage(images.background,0,0,W,H);ctx.restore();}
+function drawOcclusion(a){if(!images.background?.complete)return;
+ // Every collision polygon is also a ground-contact depth mask. When an actor
+ // walks behind its front edge, restore those furniture pixels over the feet.
+ // This makes rendering obey the same geometry that A* already treats as solid.
+ for(const layer of obstacleDepth)if(a.x>layer.minX-55&&a.x<layer.maxX+55&&a.y<layer.maxY+18)redrawBackgroundPoly(layer.poly);
+ for(const cover of coverLayers)if(cover.pred(a))redrawBackgroundPoly(cover.poly);
+}
 function drawBubble(a){if(!a.active||!a.visible||!a.bubble)return;let v=a.bubble.text,lines=[];let parts=v.split(' '),s='';for(let w of parts){let test=s?s+' '+w:w;if(test.length>23&&s){lines.push(s);s=w;}else s=test;}if(s)lines.push(s);lines=lines.slice(0,3);
  ctx.save();ctx.font='bold 16px system-ui, sans-serif';let bw=Math.max(105,...lines.map(l=>ctx.measureText(l).width+27));let bh=lines.length*21+16;let x=Math.min(1536-bw-18,Math.max(18,a.x-bw/2)),y=Math.max(90,a.y-(a.img==='dev'?209:194)-bh-15);
  ctx.fillStyle='rgba(255,255,255,.98)';ctx.strokeStyle='#1f1c1c';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(x,y,bw,bh,13);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(a.x-6,y+bh-1);ctx.lineTo(a.x+2,y+bh+13);ctx.lineTo(a.x+12,y+bh-1);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(a.x-3,y+bh-4,9,4);
@@ -316,4 +324,4 @@ document.addEventListener('keydown',e=>{if(['SELECT','INPUT'].includes(document.
 function blip(freq=440,duration=.08){if(!state.ambience)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),gain=audio.createGain();o.type='sine';o.frequency.value=freq;gain.gain.value=.018;gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+duration);o.connect(gain);gain.connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}}
 $('sound').onclick=()=>{state.ambience=!state.ambience;$('soundIcon').textContent=state.ambience?'♫':'♪';$('soundLabel').textContent=state.ambience?'Som ligado':'Som desligado';if(state.ambience)blip(660,.12);};
 setTimeout(()=>{let a=findActor('guest');sendTo(a,'coffee');setStatus('CAFÉ ANTES DE TUDO','Alguém começou o dia na copa.');setStory('O visitante vai buscar café. O Dev já está calculando quanto tempo falta para sexta.');},1600);
-window.__officeDebug={state,actors,floor,interactionSlots,interactionVisual,render,imgDraw,sendTo,playEvent,images,destinations,nodes,slots,queues,cancelQueue,pathBetween,tick,arrive};
+window.__officeDebug={state,actors,floor,interactionSlots,interactionVisual,render,imgDraw,seatRenderState,sendTo,playEvent,images,destinations,nodes,slots,queues,cancelQueue,pathBetween,tick,arrive};

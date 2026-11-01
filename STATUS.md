@@ -1,3 +1,23 @@
+# Profundidade e poses sentadas da v0.10 — 01/11/2026
+
+A interpolação que atravessava sofá, mesas e paredes foi removida. Ao sentar ou
+levantar, o personagem desvanece no ponto seguro, troca de camada quando está
+invisível e reaparece no assento; portanto nenhuma posição intermediária dentro
+do móvel é renderizada. Os polígonos de colisão também restauram os pixels do
+móvel sobre os pés quando o personagem passa atrás dele.
+
+`assets/seated-atlas.png` substitui a deformação procedural que criava pernas
+recortadas ou barras horizontais. Os cinco personagens têm poses sentadas
+dedicadas, usadas nas estações, reunião, sofá e fliperama. Os assentos foram
+reposicionados sobre cadeiras e bancos visíveis.
+
+A regressão de navegador verifica que a transição mantém somente o ponto de
+acesso ou o assento e tem opacidade zero na troca de profundidade. A revisão
+visual independente percorre todos os destinos e tenta reprovar rotas, máscaras
+e encaixes antes da publicação.
+
+---
+
 # Dev limpo e interações da v0.9 — 01/11/2026
 
 O Dev agora usa exclusivamente o atlas direcional limpo em todas as poses. Isso
