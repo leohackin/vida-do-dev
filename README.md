@@ -1,4 +1,4 @@
-# Vida do Dev — office.exe v0.7
+# Vida do Dev — office.exe v0.8
 
 Para a prévia de arte em arquivo único: `python tools/build_art_review.py` e abra
 `artifacts/art-review-standalone.html`. Ela inclui imagens e metadados e pode ser
@@ -10,6 +10,10 @@ A cena usa um fundo reconstruído sem pessoas, gatos ou balões pintados. O Dev
 possui caminhada em quatro direções; café, digitação e transições sentadas ainda
 usam o sheet de interação anterior. A marca VIDA DO DEV é recortada diretamente
 da referência preservada durante a renderização.
+
+Estações, reunião, sofá e fliperama têm posições visuais próprias. O corpo lógico
+permanece no ponto seguro de aproximação para colisões; sentar/levantar interpola
+até o móvel e as máscaras redesenham a frente da mesa ou do sofá sobre o sprite.
 
 Teste de lógica: `node --test tools/test_navigation.cjs tools/test_engine.cjs` (Node.js 18 ou superior).
 

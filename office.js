@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.7
+/* Vida do Dev · illustrated office engine v0.8
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -41,6 +41,15 @@ const interactionSlots={
  coffee:[[600,350],[628,345]],desk:[[888,744],[904,704]],
  meeting:[[1050,506],[1068,546]],lounge:[[900,628],[942,650]],
  arcade:[[1090,604]],bathroom:[[850,245]],entrance:[[936,852],[908,832]]
+};
+// Visual seats are separate from safe foot-space approach points. The logical
+// body remains in the corridor for routing; sit/stand transitions interpolate
+// to the reconstructed chair or sofa without moving collision geometry inside furniture.
+const interactionVisual={
+ 'desk:0':[1030,790],'desk:1':[620,840],
+ 'meeting:0':[1200,350],'meeting:1':[1300,365],
+ 'lounge:0':[695,465],'lounge:1':[770,465],
+ 'arcade:0':[1245,650]
 };
 const npcEvents=[
  {name:'SÓ MAIS UM COMMIT',desc:'O Dev jurou que este é o último de hoje.',lines:['só mais um commit...','o último. agora vai.'],dest:'desk'},
@@ -168,7 +177,13 @@ function tick(dt){if(!state.running)return;dt=Math.min(dt,.08)*state.speed;state
  for(let f of state.fx){f.y-=f.dy*dt;f.t-=dt;f.x+=Math.sin(state.timer*3+f.y)*dt*18;}state.fx=state.fx.filter(f=>f.t>0);
 }
 function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!im?.complete||!im.naturalWidth)return;
- let x=a.x,y=a.y,t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
+ const sitting=['sit','type'].includes(a.pose)&&!a.walking,typing=a.pose==='type'&&!a.walking;
+ const progress=a.transition?Math.min(1,a.transition.t/a.transition.duration):1;
+ const seated=a.transition?(a.transition.kind==='sit'?progress:1-progress):(sitting?1:0);
+ const visual=interactionVisual[a.slot];
+ let x=visual&&seated?a.x+(visual[0]-a.x)*seated:a.x;
+ let y=visual&&seated?a.y+(visual[1]-a.y)*seated:a.y;
+ let t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
  let frameX=step,frameY=0,sw=78,sh=183,dw=78,dh=183;
  if(a.id==='dev'&&a.walking&&!a.transition&&images.devMove?.complete&&images.devMove.naturalWidth){
   const frames=[
@@ -187,9 +202,6 @@ function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!i
   frameY=a.pose==='walk'?1:a.pose==='coffee'?2:a.pose==='type'?3:0;
   frameX=a.walking?step:(a.pose==='coffee'||a.pose==='type'?Math.floor(t*4)%6:0);
  }else{frameY=a.dir===1?1:0;frameX=a.walking?step:0;}
- const sitting=['sit','type'].includes(a.pose)&&!a.walking,typing=a.pose==='type'&&!a.walking;
- const progress=a.transition?Math.min(1,a.transition.t/a.transition.duration):1;
- const seated=a.transition?(a.transition.kind==='sit'?progress:1-progress):(sitting?1:0);
  dh*=1-.12*seated;y-=15*seated;
  if(typing){y+=Math.sin(t*8)*1.3;}
  const flicker=(a.id==='dev'&&!a.walking&&a.pose==='idle'&&Math.sin(t*1.47)>.996); // blink
@@ -214,10 +226,13 @@ function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!i
 }
 const coverLayers=[
  // these masks reproduce original real furniture pixels, allowing the walking sprites to move 'behind' desks, sofas and foreground glass
- {name:'sofa',poly:[[625,379],[820,386],[849,456],[868,514],[800,563],[677,565],[610,525]],rect:[600,365,280,210],pred:a=>a.y<573&&a.x>602&&a.x<870},
- {name:'arcade-table',poly:[[1207,537],[1284,526],[1358,566],[1357,611],[1300,655],[1210,616]],rect:[1195,520,180,150],pred:a=>a.x>1194&&a.x<1375&&a.y<677},
+ {name:'sofa',poly:[[610,455],[850,455],[868,514],[800,563],[677,565],[610,525]],rect:[600,445,280,120],pred:a=>(a.y<573&&a.x>602&&a.x<870)||(a.goal==='lounge'&&!a.walking)},
+ {name:'arcade-table',poly:[[1207,537],[1284,526],[1358,566],[1357,611],[1300,655],[1210,616]],rect:[1195,520,180,150],pred:a=>(a.x>1194&&a.x<1375&&a.y<677)||(a.goal==='arcade'&&!a.walking)},
  {name:'coffee-island',poly:[[323,215],[492,215],[532,258],[518,378],[383,392],[330,351]],rect:[319,207,220,197],pred:a=>a.x<550&&a.y<414},
- {name:'meeting-glass',poly:[[1094,275],[1410,286],[1530,477],[1530,650],[1391,522],[1220,425],[1070,351]],rect:[1060,275,470,375],pred:a=>a.x>1080&&a.y<490}
+ {name:'meeting-glass',poly:[[1094,275],[1410,286],[1530,477],[1530,650],[1391,522],[1220,425],[1070,351]],rect:[1060,275,470,375],pred:a=>a.x>1080&&a.y<490},
+ {name:'meeting-table',poly:[[1120,330],[1370,330],[1405,380],[1190,415]],pred:a=>a.goal==='meeting'&&!a.walking},
+ {name:'desk-right',poly:[[965,720],[1215,720],[1270,820],[995,855]],pred:a=>a.slot==='desk:0'&&!a.walking},
+ {name:'desk-lower',poly:[[525,780],[785,780],[845,900],[590,950]],pred:a=>a.slot==='desk:1'&&!a.walking}
 ];
 function drawOcclusion(a){if(!images.background?.complete)return;for(const cover of coverLayers){if(!cover.pred(a))continue;ctx.save();ctx.beginPath();let poly=cover.poly;ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.clip();ctx.drawImage(images.background,0,0,W,H);ctx.restore();}}
 function drawBubble(a){if(!a.active||!a.visible||!a.bubble)return;let v=a.bubble.text,lines=[];let parts=v.split(' '),s='';for(let w of parts){let test=s?s+' '+w:w;if(test.length>23&&s){lines.push(s);s=w;}else s=test;}if(s)lines.push(s);lines=lines.slice(0,3);
@@ -281,4 +296,4 @@ document.addEventListener('keydown',e=>{if(['SELECT','INPUT'].includes(document.
 function blip(freq=440,duration=.08){if(!state.ambience)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),gain=audio.createGain();o.type='sine';o.frequency.value=freq;gain.gain.value=.018;gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+duration);o.connect(gain);gain.connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}}
 $('sound').onclick=()=>{state.ambience=!state.ambience;$('soundIcon').textContent=state.ambience?'♫':'♪';$('soundLabel').textContent=state.ambience?'Som ligado':'Som desligado';if(state.ambience)blip(660,.12);};
 setTimeout(()=>{let a=findActor('guest');sendTo(a,'coffee');setStatus('CAFÉ ANTES DE TUDO','Alguém começou o dia na copa.');setStory('O visitante vai buscar café. O Dev já está calculando quanto tempo falta para sexta.');},1600);
-window.__officeDebug={state,actors,floor,interactionSlots,render,imgDraw,sendTo,playEvent,images,destinations,nodes,slots,queues,cancelQueue,pathBetween,tick,arrive};
+window.__officeDebug={state,actors,floor,interactionSlots,interactionVisual,render,imgDraw,sendTo,playEvent,images,destinations,nodes,slots,queues,cancelQueue,pathBetween,tick,arrive};

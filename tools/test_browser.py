@@ -82,6 +82,16 @@ try:
           [a.x,a.y]=[[600,350],[900,628],[888,744],[1050,506],[1090,604]][i];
           a.pose=['coffee','sit','type','idle','walk'][i++];}e.render();}''')
         page.screenshot(path=str(OUT/'actors.png'),full_page=True)
+        page.evaluate('''()=>{const e=__officeDebug;const setups=[
+          ['guest','desk',0,'type'],['dev','meeting',0,'sit'],
+          ['ana','lounge',0,'sit'],['pm','arcade',0,'sit']];
+          for(const a of e.actors)a.active=false;
+          for(const [id,dest,index,pose] of setups){const a=e.actors.find(v=>v.id===id),p=e.interactionSlots[dest][index];
+            a.active=true;a.visible=true;a.walking=false;a.transition=null;a.slot=`${dest}:${index}`;
+            a.goal=dest;a.pose=pose;a.x=p[0];a.y=p[1];a.bubble=null;
+          }e.render();
+        }''')
+        page.screenshot(path=str(OUT/'seats.png'),full_page=True)
         page.evaluate('window.requestAnimationFrame=()=>0')
         page.wait_for_timeout(100)
         page.evaluate('''()=>{const e=__officeDebug;
@@ -116,9 +126,11 @@ try:
         # Rendering measurement includes software Canvas on this machine only.
         timings=page.evaluate('''()=>{const t=[];for(let i=0;i<120;i++){
          const start=performance.now();__officeDebug.render();t.push(performance.now()-start);}return t.sort((a,b)=>a-b);}''')
+        assert timings[114] < 20, f'Canvas render p95 exceeded budget: {timings[114]:.2f} ms'
         report={'engine':ENGINE,'browser':browser.version,'functional_cases':35,
                 'raf_journey':True,'pause_resume':True,'page_errors':errors,
-                'render_ms_median':timings[60],'render_ms_p95':timings[114]}
+                'render_ms_median':timings[60],'render_ms_p95':timings[114],
+                'render_budget_ms_p95':20}
         if (BASE / 'tools/art_review.html').exists():
             from build_art_review import build
             export = build()
