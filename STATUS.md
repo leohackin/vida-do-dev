@@ -8,6 +8,8 @@ Validação da ferramenta de revisão: HTTP + Chromium, quatro prévias carregad
 
 Também foi gerada uma proposta de clean plate de 1536 × 1024, em arquivo separado: pessoas, gatos e balões removidos, cadeiras e piso reconstruídos. A revisão identificou perda do logo inferior, alteração de letras em SONHE e simplificação de objetos de reunião. Portanto ela também foi reprovada para substituição direta. A página de inspeção inclui comparação por corte com a referência. Não foram produzidas máscaras finais nem validado o motor sobre esse fundo. A referência e a cena publicada permanecem intactas.
 
+Uma tentativa adicional de reparo do clean plate não resolveu o letreiro e recriou o logo com forma/iluminação diferentes. Foi inspecionada e rejeitada, preservando a proposta anterior como evidência. As tentativas de geração/reparo não produziram assets que passem nos critérios de ciclo anatômico e fidelidade da marca. Não há justificativa para integrar esses arquivos ao motor; o reparo artístico e as camadas finais continuam abertos.
+
 As fases 2 e 3 continuam parciais. A próxima entrega artística precisa de um ciclo com pernas alternadas, poses de passagem e âncoras coerentes, além das transições de interação. Os requisitos concretos estão em `assets/proposals/README.md`. A revisão humana da direção artística permanece pendente, distinta dos testes de lógica e navegador.
 
 

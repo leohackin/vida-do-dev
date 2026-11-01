@@ -52,3 +52,9 @@ Para uso na cena, preservar a marca e os letreiros da referência, revisar objet
 reconstruídos e produzir as camadas/máscaras de primeiro plano. Comparação visual
 do fundo vazio não equivale a aprovação artística nem a validação dos atores
 sentados. A fase 3 continua parcial.
+
+Uma tentativa adicional de restaurar logo e letreiro foi inspecionada e
+rejeitada: trouxe um logo com forma/iluminação diferentes e manteve SONNE.
+O arquivo experimental anterior foi preservado para comparação; a tentativa
+não foi aplicada ao jogo nem substituiu a referência. Os defeitos da marca e
+os ciclos anatômicos exigem reparo artístico antes de qualquer integração.
