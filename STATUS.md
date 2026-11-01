@@ -1,3 +1,22 @@
+# Dev limpo e interações da v0.9 — 01/11/2026
+
+O Dev agora usa exclusivamente o atlas direcional limpo em todas as poses. Isso
+remove o fragmento cinza do sheet anterior que aparecia atrás da cabeça quando
+ele parava na copa. A escala foi ajustada à perspectiva dos demais personagens,
+e café e digitação recebem gestos leves sobre o mesmo corpo consistente.
+
+As transições de sentar continuam separando o ponto lógico seguro da posição
+visual no móvel. A suíte percorre todos os destinos com a pegada completa do
+ator, valida separação física e produz capturas dedicadas das interações e dos
+quatro assentos para inspeção visual.
+
+Evidências locais: 25 testes de lógica aprovados, quatro testes de arte
+aprovados e 35 percursos reais no Chromium 154 sem erro de página. A captura
+`dev-interaction.png` confirma a remoção do artefato; `seats.png` cobre estação,
+reunião, sofá e fliperama.
+
+---
+
 # Assentos e oclusões da v0.8 — 01/11/2026
 
 Estações, reunião, sofá e fliperama agora separam o ponto lógico de aproximação da posição visual no móvel. O corpo usado por A*, reservas e colisões permanece no piso seguro; a animação de sentar interpola até a cadeira/sofá e a de levantar retorna ao ponto lógico antes da caminhada. Cada slot sentado possui um assento visual exclusivo.

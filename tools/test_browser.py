@@ -92,6 +92,11 @@ try:
           }e.render();
         }''')
         page.screenshot(path=str(OUT/'seats.png'),full_page=True)
+        page.evaluate('''()=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
+          const dev=e.actors.find(a=>a.id==='dev');dev.active=true;dev.visible=true;dev.walking=false;dev.transition=null;
+          dev.x=760;dev.y=610;dev.slot=null;dev.goal='coffee';dev.pose='coffee';dev.bubble=null;e.render();
+        }''')
+        page.screenshot(path=str(OUT/'dev-interaction.png'),full_page=True)
         page.evaluate('window.requestAnimationFrame=()=>0')
         page.wait_for_timeout(100)
         page.evaluate('''()=>{const e=__officeDebug;
