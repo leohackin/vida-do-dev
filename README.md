@@ -64,3 +64,8 @@ individuais. Além dos 35 percursos acelerados por motor, a suíte verifica uma
 chegada usando o relógio real de `requestAnimationFrame` e pausa/retomada pelos
 controles da página. WebKit do Playwright não equivale a Safari em dispositivo
 Apple, e o viewport móvel não equivale a um aparelho físico.
+
+O corredor da copa/banheiro admite uma visita de cada vez, incluindo a volta.
+Pedidos manuais aguardam mantendo a rota e o slot atuais. Os demais ambientes
+mantêm seus slots individuais concorrentes. Essa restrição evita o impasse
+reproduzido nas rotinas; ainda não há garantia para todas as combinações de pedidos.

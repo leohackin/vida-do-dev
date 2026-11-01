@@ -11,7 +11,7 @@ test('every authored slot is reachable, with clearance along every segment',()=>
 });
 test('capacity refusal preserves movement and reservation; independent slots work',()=>{
  const e=engine(),[guest,dev,ana]=e.actors;
- assert.ok(e.sendTo(guest,'coffee'));assert.ok(e.sendTo(dev,'coffee'));
+ assert.ok(e.sendTo(guest,'desk'));assert.ok(e.sendTo(dev,'desk'));
  assert.notEqual(guest.slot,dev.slot);
  // A third character cannot materialize on the actor waiting at entry.
  assert.equal(e.sendTo(ana,'arcade'),false);
@@ -47,8 +47,9 @@ test('all characters including PM reach every destination without furniture coll
 test('opposing traffic eventually arrives and preserves physical separation',()=>{
  const e=engine(),a=e.actors[0],b=e.actors[1];
  [a.x,a.y]=e.nodes.bathroom;b.active=true;[b.x,b.y]=e.nodes.entry;
- assert.ok(e.sendTo(a,'entrance'));assert.ok(e.sendTo(b,'bathroom'));
- for(let i=0;i<4000&&(a.walking||b.walking);i++){
+ assert.ok(e.sendTo(a,'entrance'));assert.equal(e.sendTo(b,'bathroom',true),false);
+ assert.equal(e.queues.bathroom[0],b.id);
+ for(let i=0;i<4000&&(a.walking||b.walking||e.queues.bathroom.length);i++){
   for(const o of [a,b])if(!o.walking)o.wait=Infinity;
   e.tick(.08);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>=24-1e-8);
  }
@@ -57,6 +58,20 @@ test('opposing traffic eventually arrives and preserves physical separation',()=
 test('pause freezes movement, transitions and simulation timers',()=>{
  const e=engine(),a=e.actors[0];e.sendTo(a,'desk');e.state.running=false;
  const before=JSON.stringify(e.actors);e.tick(.08);assert.equal(JSON.stringify(e.actors),before);assert.equal(e.state.timer,0);
+});
+test('upper visit keeps its permit during interaction and releases after departure',()=>{
+ const e=engine(),[owner,waiting]=e.actors;
+ assert.ok(e.sendTo(owner,'coffee'));finish(e,owner);owner.wait=Infinity;
+ assert.ok(e.sendTo(waiting,'desk'));
+ const route=waiting.route,slot=waiting.slot;
+ assert.equal(e.sendTo(waiting,'bathroom',true),false);
+ assert.equal(waiting.route,route);assert.equal(waiting.slot,slot);
+ e.tick(.08);assert.equal(waiting.goal,'desk');
+ assert.ok(e.sendTo(owner,'entrance'));
+ e.tick(.08);assert.equal(waiting.goal,'desk');
+ for(let i=0;i<4000&&e.queues.bathroom.length;i++)e.tick(.08);
+ assert.equal(waiting.goal,'bathroom');assert.equal(e.queues.bathroom.length,0);
+ assert.ok(owner.y>=565,'outgoing actor cleared the upper area before admission');
 });
 test('FIFO queue preserves old route, serves vacancies, and cancels on retarget',()=>{
  const e=engine(),a=e.actors[0],b=e.actors[1];
@@ -87,10 +102,16 @@ test('repeated manual requests preserve FIFO priority and serve the original hea
  assert.equal(e.queues.arcade.length,0);
  assert.deepEqual(Array.from(e.queues.bathroom),[second.id]);
 });
-test('seeded five-character simulation keeps footprints clear and reservations unique',()=>{
- const e=engine(42);e.state.spawnTimer=0;e.state.eventTimer=10;
+for(const seed of [42,7,2026])test(`seed ${seed}: five-character routines stay separated and continue moving`,()=>{
+ const e=engine(seed);e.state.spawnTimer=0;e.state.eventTimer=10;
+ const lastMoved=new Map(),arrivals=new Map();
  for(let i=0;i<3000;i++){
+  const before=new Map(e.actors.map(a=>[a.id,{x:a.x,y:a.y,walking:a.walking}]));
   e.tick(.08);
+  for(const a of e.actors){const p=before.get(a.id);
+   if(a.active&&Math.hypot(a.x-p.x,a.y-p.y)>.01)lastMoved.set(a.id,e.state.timer);
+   if(p.walking&&!a.walking)arrivals.set(a.id,(arrivals.get(a.id)||0)+1);
+  }
   const visible=e.actors.filter(a=>a.active&&a.visible);
   for(const a of visible){assert.ok(e.floor.clear([a.x,a.y]),a.id);
    for(const b of visible)if(a!==b)assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>=24-1e-8,`${a.id}/${b.id}`);
@@ -98,6 +119,10 @@ test('seeded five-character simulation keeps footprints clear and reservations u
   const owners=Object.values(e.slots.snapshot());assert.equal(new Set(owners).size,owners.length);
  }
  assert.equal(e.actors.filter(a=>a.active).length,5);
+ for(const a of e.actors){
+  assert.ok((arrivals.get(a.id)||0)>=2,`${a.id} completed at least two trips`);
+  assert.ok(e.state.timer-(lastMoved.get(a.id)||0)<60,`${a.id} moved in the last minute`);
+ }
 });
 test('coworkers at different slots exchange role-specific dialogue',()=>{
  const e=engine(),dev=e.actors[1],pm=e.actors.find(a=>a.id==='pm');

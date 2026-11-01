@@ -8,6 +8,35 @@ Validação da ferramenta de revisão: HTTP + Chromium, quatro prévias carregad
 
 As fases 2 e 3 continuam parciais. A próxima entrega artística precisa de um ciclo com pernas alternadas, poses de passagem e âncoras coerentes, além das transições de interação. Os requisitos concretos estão em `assets/proposals/README.md`. A revisão humana da direção artística permanece pendente, distinta dos testes de lógica e navegador.
 
+
+A correção de continuidade foi integrada pelo PR #4 em `c36a99a`, após os oito checks de push/PR aprovados: 23 testes de lógica e suíte em Chromium, Firefox e WebKit. A main contém os PRs #2, #3 e #4. Este rascunho preserva integralmente essas correções; a única entrega artística nova permanece fora do motor.
+
+---
+
+# Correção de continuidade das rotinas — 31/10/2026
+
+A validação em três motores foi integrada pelo PR #3 (`1a1ef3f`) após oito checks aprovados no commit `d87b7e6`: lógica e Chromium/Firefox/WebKit, nos eventos de push e PR. Foram 35 percursos por motor, chegada por requestAnimationFrame e pausa/retomada. As falhas locais de lançamento de Firefox/WebKit não foram tratadas como aprovação; os resultados aprovados vieram do CI.
+
+## Problemas reproduzidos e correções
+
+A simulação seed 42 da v0.6 mantinha todos os atores sem deslocamento por mais de 160 segundos. Separação física e reservas exclusivas passavam mesmo com as rotinas travadas. O dono da passagem podia adquiri-la muito longe do corredor, liberando seu slot original e parando sobre a rota de outro ator.
+
+O acesso à copa/banheiro agora é admitido **antes** de liberar o slot atual. Uma permissão abrange a visita, a interação e o retorno pelo corredor. Solicitações manuais aguardam na fila mantendo rota/reserva; solicitações automáticas recusadas continuam no destino atual. **Limitação deliberada: somente uma visita por vez ao conjunto copa/banheiro**, embora existam dois pontos de café. Os slots individuais dos demais ambientes continuam concorrentes. Não é uma solução geral de tráfego nem uma prova de ausência de impasses para pedidos manuais cíclicos.
+
+As rotas iniciais consideram os outros corpos visíveis, além do replanejamento já existente. Personagens cujo destino inicial está indisponível podem entrar por um slot livre da entrada, evitando que Ops nunca apareça por congestionamento da copa.
+
+A mudança da simulação também revelou uma quina onde a amostragem de segmentos a cada 3 px deixava passar uma margem ligeiramente menor que 12 px. Agora o espaço varrido pelos pés usa distância contínua entre segmentos e arestas. Há regressão com extremos livres e trajetória que passa rente demais à quina.
+
+## Evidências desta correção
+
+- Sintaxe JavaScript aprovada; diff sem erros de whitespace.
+- **23 testes de lógica/integração aprovados** (Node 24, sem isolamento para enumerar os testes). Três simulações determinísticas de quatro minutos, seeds 42/7/2026: cinco atores ativos, pés livres, reservas únicas, pelo menos duas chegadas por ator e deslocamento de cada ator no último minuto. Isso amplia a evidência de continuidade, sem provar todas as configurações.
+- Regressão da permissão durante interação e liberação após a saída; tráfego oposto agora aguarda admissão antes de trocar a reserva.
+- Chromium 154: 35 percursos, chegada em relógio real e pausa/retomada aprovados, sem exceções. Emissão Canvas: mediana 0,1 ms, p95 0,2 ms nesta máquina, sem equivalência a FPS/GPU.
+- Nenhum PNG alterado; a referência permanece intacta. Os três motores precisam passar novamente no CI deste PR antes de integrar.
+
+As fases 1 e 4 avançam com essas correções. Desenhos direcionais finais, assentos físicos, clean plate, camadas, oclusões e aprovação artística continuam pendentes; nenhuma fase é declarada integralmente concluída.
+
 ---
 
 # Iteração de validação de navegador — 31/10/2026
