@@ -71,16 +71,17 @@ const slots=OfficeNavigation.createSlots();
 const queues=Object.fromEntries(Object.keys(destinations).map(k=>[k,[]]));
 let queueTimer=0;
 function cancelQueue(id){for(const queue of Object.values(queues)){const i=queue.indexOf(id);if(i>=0)queue.splice(i,1);}}
-// The cafe aisle has no room for two footprints. Reserve the entire passage
-// before entering rather than letting opposing actors meet in its narrow middle.
-let passageOwner=null;
-function inPassage(x,y){return x>=540&&x<=606&&y>=390&&y<=546;}
-function crossesPassage(a){
- let start=[a.x,a.y];
- for(const p of a.route){const n=Math.max(1,Math.ceil(dist(start,[p.x,p.y])/6));
-  for(let i=0;i<=n;i++)if(inPassage(start[0]+(p.x-start[0])*i/n,start[1]+(p.y-start[1])*i/n))return true;
-  start=[p.x,p.y];
- }return false;
+// The upper cul-de-sac has no proven passing place. Admit one visit at a time,
+// retaining its permit through the interaction and the return through the aisle.
+// Rejected visitors keep their current route AND slot, rather than stopping in
+// the middle of a released slot that another actor has already reserved.
+let upperOwner=null;
+const upperDestination=which=>which==='coffee'||which==='bathroom';
+const inUpper=a=>a.y<390||(a.x<770&&a.y<565);
+function refreshUpperOwner(){
+ const owner=findActor(upperOwner);
+ if(owner&&(!owner.active||(!inUpper(owner)&&!upperDestination(owner.goal))))upperOwner=null;
+ if(upperOwner===null){const inside=actors.find(a=>a.active&&inUpper(a));if(inside)upperOwner=inside.id;}
 }
 function pathBetween(a,b,point=nodes[destinations[b]?.node],blocked=[]){
  const path=point&&floor.route([a.x,a.y],point,blocked);
@@ -88,20 +89,23 @@ function pathBetween(a,b,point=nodes[destinations[b]?.node],blocked=[]){
 }
 function sendTo(a,which,user=false){
  if(!a||!destinations[which])return false;
+ refreshUpperOwner();
+ const upperFull=upperDestination(which)&&upperOwner!==null&&upperOwner!==a.id;
  const origin=a.active?a:{x:nodes.entry[0],y:nodes.entry[1]};
+ const occupied=actors.filter(o=>o!==a&&o.active&&o.visible).map(o=>[o.x,o.y]);
  let choice=null;
  for(const [i,point] of interactionSlots[which].entries()){
   const key=`${which}:${i}`,owner=slots.owner(key);
   if(owner!==undefined&&owner!==a.id)continue;
-  const route=pathBetween(origin,which,point);
+  const route=pathBetween(origin,which,point,occupied);
   if(!route)continue;
   const length=route.reduce((v,p,i)=>v+dist(i?[route[i-1].x,route[i-1].y]:[origin.x,origin.y],[p.x,p.y]),0);
   if(!choice||length<choice.length)choice={key,route,length};
  }
  const capacityFull=interactionSlots[which].every((_,i)=>slots.owner(`${which}:${i}`)!==undefined&&slots.owner(`${which}:${i}`)!==a.id);
- const ahead=queues[which][0]&&queues[which][0]!==a.id;
- if(!choice||ahead){
-  if(user&&(capacityFull||ahead)){
+ const ahead=queues[which][0]&&queues[which][0]!==a.id&&!(upperDestination(which)&&upperOwner===a.id);
+ if(!choice||ahead||upperFull){
+  if(user&&(capacityFull||ahead||upperFull)){
    // Repeated clicks on the same destination must not surrender FIFO priority.
    if(!queues[which].includes(a.id)){cancelQueue(a.id);queues[which].push(a.id);}
    setStory(`${a.name} está na fila de ${destinations[which].label.toLowerCase()}. A rota atual foi mantida.`);
@@ -113,6 +117,7 @@ function sendTo(a,which,user=false){
  if(!a.active&&actors.some(other=>other!==a&&other.active&&other.visible&&dist([other.x,other.y],nodes.entry)<floor.radius*2))return false;
  if(!a.visible&&actors.some(o=>o!==a&&o.active&&o.visible&&dist([o.x,o.y],[a.x,a.y])<floor.radius*2))return false;
  if(!slots.reserve(a.id,choice.key))return false;
+ if(upperDestination(which))upperOwner=a.id;
  cancelQueue(a.id);
  if(!a.active){a.active=true;a.x=nodes.entry[0];a.y=nodes.entry[1];}
  const wasSeated=['sit','type'].includes(a.pose)&&!a.walking;
@@ -139,15 +144,14 @@ function arrive(a){a.walking=false;a.route=[];let d=destinations[a.goal]||destin
 function tick(dt){if(!state.running)return;dt=Math.min(dt,.08)*state.speed;state.timer+=dt;state.eventTimer-=dt;
  if(state.eventTimer<0)playEvent();
  state.spawnTimer-=dt;if(state.spawnTimer<=0){const newGuy=actors.find(a=>!a.active&&a.id!=='guest');
-  const spawned=newGuy&&sendTo(newGuy,newGuy.home);
+  const spawned=newGuy&&(sendTo(newGuy,newGuy.home)||sendTo(newGuy,'entrance'));
   if(spawned){setStory(`${newGuy.name} acabou de chegar ao escritório.`);speech(newGuy,'bom dia, pessoal!',4);}state.spawnTimer=spawned?rand(15,25):1;
  }
  queueTimer-=dt;if(queueTimer<=0){for(const [dest,queue] of Object.entries(queues))if(queue.length)sendTo(findActor(queue[0]),dest);queueTimer=.5;}
- const owner=findActor(passageOwner);if(owner&&(!owner.walking||(!crossesPassage(owner)&&!inPassage(owner.x,owner.y))))passageOwner=null;
+ refreshUpperOwner();
  for(let a of actors){if(!a.active)continue;a.elapsed+=dt;if(a.transition){a.transition.t+=dt;if(a.transition.t>=a.transition.duration)a.transition=null;}if(a.bubble){a.bubble.t-=dt;if(a.bubble.t<=0)a.bubble=null;}
   if(a.walking&&a.route.length){
    if(a.transition)continue;
-   if(crossesPassage(a)){if(passageOwner===null)passageOwner=a.id;if(passageOwner!==a.id)continue;}
    let p=a.route[0],dx=p.x-a.x,dy=p.y-a.y,l=Math.hypot(dx,dy),step=Math.min(a.speed*dt,l);
    const next=l?[a.x+dx/l*step,a.y+dy/l*step]:[a.x,a.y];
    const others=actors.filter(o=>o!==a&&o.active&&o.visible);
