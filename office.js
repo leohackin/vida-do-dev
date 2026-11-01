@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.10
+/* Vida do Dev · illustrated office engine v0.11
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -48,7 +48,7 @@ const interactionSlots={
 const interactionVisual={
  'desk:0':[1030,790],'desk:1':[620,840],
  'meeting:0':[1200,375],'meeting:1':[1300,390],
- 'lounge:0':[700,500],'lounge:1':[780,510],
+ 'lounge:0':[665,470],'lounge:1':[755,480],
  'arcade:0':[1350,675]
 };
 const npcEvents=[
@@ -257,11 +257,15 @@ const coverLayers=[
 const obstacleDepth=obstacles.map(poly=>({poly,minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),maxY:Math.max(...poly.map(p=>p[1]))}));
 function redrawBackgroundPoly(poly){ctx.save();ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.clip();ctx.drawImage(images.background,0,0,W,H);ctx.restore();}
 function drawOcclusion(a){if(!images.background?.complete)return;
+ const sitting=['sit','type'].includes(a.pose)&&!a.walking;
+ const loungeSeated=a.goal==='lounge'&&seatRenderState(a,sitting).visualSeated;
  // Every collision polygon is also a ground-contact depth mask. When an actor
  // walks behind its front edge, restore those furniture pixels over the feet.
  // This makes rendering obey the same geometry that A* already treats as solid.
- for(const layer of obstacleDepth)if(a.x>layer.minX-55&&a.x<layer.maxX+55&&a.y<layer.maxY+18)redrawBackgroundPoly(layer.poly);
- for(const cover of coverLayers)if(cover.pred(a))redrawBackgroundPoly(cover.poly);
+ // On the sofa, the authored seated sprite includes knees and lower legs in
+ // front of the cushion; repainting the sofa would cut the actor at the waist.
+ for(const layer of obstacleDepth)if(!loungeSeated&&a.x>layer.minX-55&&a.x<layer.maxX+55&&a.y<layer.maxY+18)redrawBackgroundPoly(layer.poly);
+ for(const cover of coverLayers)if(!(loungeSeated&&cover.name==='sofa')&&cover.pred(a))redrawBackgroundPoly(cover.poly);
 }
 function drawBubble(a){if(!a.active||!a.visible||!a.bubble)return;let v=a.bubble.text,lines=[];let parts=v.split(' '),s='';for(let w of parts){let test=s?s+' '+w:w;if(test.length>23&&s){lines.push(s);s=w;}else s=test;}if(s)lines.push(s);lines=lines.slice(0,3);
  ctx.save();ctx.font='bold 16px system-ui, sans-serif';let bw=Math.max(105,...lines.map(l=>ctx.measureText(l).width+27));let bh=lines.length*21+16;let x=Math.min(1536-bw-18,Math.max(18,a.x-bw/2)),y=Math.max(90,a.y-(a.img==='dev'?209:194)-bh-15);

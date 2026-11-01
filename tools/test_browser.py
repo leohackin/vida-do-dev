@@ -72,7 +72,7 @@ try:
         }''')
         assert (transition[0]['x'], transition[0]['y']) == (900, 628)
         assert transition[1]['renderAlpha'] == 0
-        assert (transition[2]['x'], transition[2]['y']) == (700, 500)
+        assert (transition[2]['x'], transition[2]['y']) == (665, 470)
         # Walk each actor through all destinations in the real engine, rendering every arrival.
         page.evaluate('''()=>{
           const e=__officeDebug;e.state.running=true;
@@ -102,6 +102,13 @@ try:
           }e.render();
         }''')
         page.screenshot(path=str(OUT/'seats.png'),full_page=True)
+        page.evaluate('''()=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
+          for(const [id,index] of [['guest',0],['dev',1]]){const a=e.actors.find(v=>v.id===id),p=e.interactionSlots.lounge[index];
+            a.active=true;a.visible=true;a.walking=false;a.transition=null;a.slot=`lounge:${index}`;
+            a.goal='lounge';a.pose='sit';a.x=p[0];a.y=p[1];a.bubble=null;
+          }e.render();
+        }''')
+        page.screenshot(path=str(OUT/'lounge-pair.png'),full_page=True)
         page.evaluate('''()=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
           const dev=e.actors.find(a=>a.id==='dev');dev.active=true;dev.visible=true;dev.walking=false;dev.transition=null;
           dev.x=760;dev.y=610;dev.slot=null;dev.goal='coffee';dev.pose='coffee';dev.bubble=null;e.render();

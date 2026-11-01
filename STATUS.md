@@ -1,3 +1,13 @@
+# Corpo completo no sofá da v0.11 — 01/11/2026
+
+A máscara frontal do sofá ocultava joelhos e pernas do atlas sentado, deixando
+apenas cabeça e tronco. Os dois slots do lounge agora ficam sobre as almofadas,
+e a pose sentada completa é desenhada à frente do assento. Uma captura dedicada
+com dois personagens (`lounge-pair.png`) impede que a revisão dos demais móveis
+esconda novamente esse defeito.
+
+---
+
 # Profundidade e poses sentadas da v0.10 — 01/11/2026
 
 A interpolação que atravessava sofá, mesas e paredes foi removida. Ao sentar ou
