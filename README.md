@@ -1,4 +1,4 @@
-# Vida do Dev — office.exe v0.8
+# Vida do Dev — office.exe v0.9
 
 Para a prévia de arte em arquivo único: `python tools/build_art_review.py` e abra
 `artifacts/art-review-standalone.html`. Ela inclui imagens e metadados e pode ser
@@ -7,9 +7,9 @@ aberta fora da pasta do repositório, sem servidor. A arte continua em revisão.
 Esta versão evolui a v0.5 com mapa de obstáculos, posições individuais, filas, transições do Dev e PM independente. As quatro fases continuam parciais. Consulte `STATUS.md` para testes, fases e limitações.
 
 A cena usa um fundo reconstruído sem pessoas, gatos ou balões pintados. O Dev
-possui caminhada em quatro direções; café, digitação e transições sentadas ainda
-usam o sheet de interação anterior. A marca VIDA DO DEV é recortada diretamente
-da referência preservada durante a renderização.
+usa o atlas limpo em caminhada, espera, café, digitação e transições sentadas;
+o sheet de interação com o artefato cinza deixou de ser renderizado. A marca
+VIDA DO DEV é recortada diretamente da referência preservada.
 
 Estações, reunião, sofá e fliperama têm posições visuais próprias. O corpo lógico
 permanece no ponto seguro de aproximação para colisões; sentar/levantar interpola

@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.8
+/* Vida do Dev · illustrated office engine v0.9
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -185,17 +185,37 @@ function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!i
  let y=visual&&seated?a.y+(visual[1]-a.y)*seated:a.y;
  let t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
  let frameX=step,frameY=0,sw=78,sh=183,dw=78,dh=183;
- if(a.id==='dev'&&a.walking&&!a.transition&&images.devMove?.complete&&images.devMove.naturalWidth){
+ if(a.id==='dev'&&images.devMove?.complete&&images.devMove.naturalWidth){
   const frames=[
    [[119,35,165,275],[425,36,126,276],[690,35,159,275],[992,36,147,275]],
    [[115,337,170,277],[420,337,133,276],[698,338,164,276],[1000,338,146,276]],
    [[116,638,163,276],[410,638,138,275],[697,638,163,277],[984,639,155,275]],
    [[113,933,161,282],[407,933,148,281],[691,933,166,282],[986,933,156,282]]
   ];
-  const [sx,sy,sourceWidth,sourceHeight]=frames[a.facing][Math.floor(a.motionTime*6)%4];
-  const targetHeight=190,targetWidth=sourceWidth/sourceHeight*targetHeight;
+  const frameIndex=a.walking&&!a.transition?Math.floor(a.motionTime*6)%4:1;
+  const [sx,sy,sourceWidth,sourceHeight]=frames[a.facing][frameIndex];
+  // The directional atlas is tightly cropped while the legacy sheets include
+  // generous transparent margins. Match the visible character scale rather
+  // than the raw frame height so Dev belongs in the same perspective.
+  let targetHeight=148,targetWidth=sourceWidth/sourceHeight*targetHeight;
+  targetHeight*=1-.12*seated;
   ctx.save();ctx.globalAlpha=a.alpha;ctx.fillStyle='rgba(29,26,25,.30)';ctx.beginPath();ctx.ellipse(x,y+1,25,6,0,0,2*Math.PI);ctx.fill();
-  ctx.imageSmoothingEnabled=true;ctx.drawImage(images.devMove,sx,sy,sourceWidth,sourceHeight,x-targetWidth/2,y-targetHeight+phase,targetWidth,targetHeight);ctx.restore();
+  ctx.translate(x-targetWidth/2,y-targetHeight+phase);ctx.translate(0,27*seated);ctx.imageSmoothingEnabled=true;
+  if(seated>0){
+   const top=Math.round(sourceHeight*.69),leg=Math.round(sourceHeight*.30);
+   ctx.drawImage(images.devMove,sx,sy,sourceWidth,top,0,0,targetWidth,targetHeight*(.69+.10*seated));
+   ctx.save();ctx.translate(targetWidth*.48,targetHeight*(.69+.09*seated));ctx.rotate(-.25*seated);
+   ctx.drawImage(images.devMove,sx+sourceWidth*.19,sy+top,sourceWidth*.56,leg,0,0,targetWidth*.57,targetHeight*(.30-.11*seated));ctx.restore();
+   ctx.drawImage(images.devMove,sx+sourceWidth*.48,sy+Math.round(sourceHeight*.81),sourceWidth*.33,Math.round(sourceHeight*.17),targetWidth*(.48+.16*seated),targetHeight*(.81+.03*seated),targetWidth*(.33-.05*seated),targetHeight*(.17-.02*seated));
+  }else ctx.drawImage(images.devMove,sx,sy,sourceWidth,sourceHeight,0,0,targetWidth,targetHeight);
+  if(a.pose==='coffee'&&!a.walking){
+   const mugX=targetWidth*.70,mugY=targetHeight*.56;
+   ctx.fillStyle='#f4f1e8';ctx.strokeStyle='#313238';ctx.lineWidth=1.5;
+   ctx.beginPath();ctx.roundRect(mugX,mugY,9,11,2);ctx.fill();ctx.stroke();
+   ctx.beginPath();ctx.arc(mugX+10,mugY+5.5,3.2,-Math.PI/2,Math.PI/2);ctx.stroke();
+  }
+  if(a.pose==='type'&&!a.walking){ctx.fillStyle='#ecbc83';ctx.beginPath();ctx.ellipse(targetWidth*.59,targetHeight*.61+Math.sin(t*12)*1.2,4.5,2.5,0,0,2*Math.PI);ctx.fill();}
+  ctx.restore();
   return;
  }
  if(a.img==='dev'){sw=112;sh=202;dw=103;dh=187;
