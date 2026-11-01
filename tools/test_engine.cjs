@@ -69,6 +69,24 @@ test('FIFO queue preserves old route, serves vacancies, and cancels on retarget'
  assert.equal(e.slots.owner(slot),undefined);
  e.queues.coffee.push(b.id);assert.ok(e.sendTo(b,'lounge'));assert.equal(e.queues.coffee.length,0);
 });
+test('repeated manual requests preserve FIFO priority and serve the original head',()=>{
+ const e=engine(),[owner,first,second]=e.actors;
+ assert.ok(e.sendTo(owner,'arcade'));
+ for(const [a,p] of [[first,e.interactionSlots.entrance[1]],[second,e.interactionSlots.meeting[0]]]){
+  a.active=true;[a.x,a.y]=p;
+  assert.equal(e.sendTo(a,'arcade',true),false);
+ }
+ for(const a of [first,second,first])assert.equal(e.sendTo(a,'arcade',true),false);
+ assert.deepEqual(Array.from(e.queues.arcade),[first.id,second.id]);
+ assert.ok(e.sendTo(owner,'desk'));e.tick(.08);
+ assert.equal(e.slots.owner('arcade:0'),first.id);
+ assert.deepEqual(Array.from(e.queues.arcade),[second.id]);
+ // A different full destination replaces the pending request instead of duplicating it.
+ assert.ok(e.sendTo(owner,'bathroom'));
+ assert.equal(e.sendTo(second,'bathroom',true),false);
+ assert.equal(e.queues.arcade.length,0);
+ assert.deepEqual(Array.from(e.queues.bathroom),[second.id]);
+});
 test('seeded five-character simulation keeps footprints clear and reservations unique',()=>{
  const e=engine(42);e.state.spawnTimer=0;e.state.eventTimer=10;
  for(let i=0;i<3000;i++){

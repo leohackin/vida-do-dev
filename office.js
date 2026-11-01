@@ -101,7 +101,11 @@ function sendTo(a,which,user=false){
  const capacityFull=interactionSlots[which].every((_,i)=>slots.owner(`${which}:${i}`)!==undefined&&slots.owner(`${which}:${i}`)!==a.id);
  const ahead=queues[which][0]&&queues[which][0]!==a.id;
  if(!choice||ahead){
-  if(user&&(capacityFull||ahead)){cancelQueue(a.id);queues[which].push(a.id);setStory(`${a.name} entrou na fila de ${destinations[which].label.toLowerCase()}. A rota atual foi mantida.`);}
+  if(user&&(capacityFull||ahead)){
+   // Repeated clicks on the same destination must not surrender FIFO priority.
+   if(!queues[which].includes(a.id)){cancelQueue(a.id);queues[which].push(a.id);}
+   setStory(`${a.name} está na fila de ${destinations[which].label.toLowerCase()}. A rota atual foi mantida.`);
+  }
   else if(user)setStory('Não há caminho seguro disponível. A rota atual foi mantida.');
   return false;
  }

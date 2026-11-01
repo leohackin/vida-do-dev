@@ -25,11 +25,21 @@ O mapa é uma aproximação manual do espaço dos pés. Bases de plantas e móve
 
 Os antigos `test_page.py` e `test_sit.py` são scripts de diagnóstico/captura, sem asserções suficientes para aprovação. A suíte de navegador com asserções é `test_browser.py`.
 
-## GitHub e ambiente
+## Retomada e revisão em 31/10/2026
 
-O commit de implementação `6038874` foi enviado para `feat/office-v06`. A tentativa de criar PR com `gh pr create` falhou com `Post "https://api.github.com/graphql": Forbidden`; não foi criado PR nem realizado merge. O Git HTTPS consegue ler e enviar branches. A API em `api.github.com` responde 403 no CONNECT do proxy: abrir PR, consultar revisão/checks e efetuar merge pela API estão bloqueados nesta sessão. A inclusão de `api.github.com` foi salva no rascunho de rede, preservando os presets; salvar o rascunho não aplica a mudança nem publica o ambiente. É necessário revisar/salvar nas configurações e publicar o ambiente, depois repetir a operação da API e conferir a autenticação existente. Nenhum novo token foi solicitado. Não foi feito merge direto na `main` para contornar a revisão.
+A rede efetivamente aplicada está irrestrita e a API do GitHub voltou a responder com a autenticação existente. A `main` remota permanece em `cda4617`; a branch recuperada estava em `da8801a`. Não havia PR da v0.6 na retomada. O bloqueio de CONNECT registrado anteriormente deixou de ocorrer. A consulta administrativa de proteção da branch retorna 403 de permissão da integração; isso não equivale a ausência de proteção.
 
-O workflow passou a incluir os testes de navegador e upload das capturas. A execução remota e seus resultados precisam ser consultados no GitHub após restabelecer o acesso. Nenhuma das quatro fases é declarada integralmente concluída.
+Revisão do diff: reprodução dos percursos e leitura das regras de reserva, filas, passagem, geometria e renderização. Foi reproduzida e corrigida a perda de prioridade FIFO ao repetir um pedido manual para o mesmo destino cheio. O teste de regressão verifica repetição, atendimento do primeiro solicitante e troca da fila para outro destino.
+
+Validação desta retomada, após a correção:
+- Sintaxe dos dois JavaScripts e `git diff --check` aprovados.
+- `node --test --test-isolation=none tools/test_engine.cjs tools/test_navigation.cjs` (Node 24): **19 testes aprovados**. O modo sem isolamento permite enumerar cada asserção nesta execução local; o workflow continua com Node 22 e o comando padrão.
+- Chromium 154: **35 percursos aprovados**, nenhuma exceção da página; mediana de emissão Canvas 0,2 ms, p95 0,5 ms. A suíte será repetida no commit final e em CI.
+- Inspeção visual local da referência e da captura de personagens: composição preservada; poses simbólicas e sobreposições ainda evidentes, sem aprovação artística. Não há evidência de novos desenhos direcionais.
+- Nenhum PNG alterado frente à `main`; hash da referência confirmado novamente.
+
+As quatro fases continuam parciais. As evidências de motor, navegador, inspeção visual e aprovação artística são distintas. A aprovação artística humana permanece pendente, assim como os itens de arte e camadas descritos acima.
+
 
 ---
 
