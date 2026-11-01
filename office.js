@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.11
+/* Vida do Dev · illustrated office engine v0.12
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -48,7 +48,7 @@ const interactionSlots={
 const interactionVisual={
  'desk:0':[1030,790],'desk:1':[620,840],
  'meeting:0':[1200,375],'meeting:1':[1300,390],
- 'lounge:0':[665,470],'lounge:1':[755,480],
+ 'lounge:0':[665,490],'lounge:1':[755,480],
  'arcade:0':[1350,675]
 };
 const npcEvents=[

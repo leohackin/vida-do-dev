@@ -72,7 +72,7 @@ try:
         }''')
         assert (transition[0]['x'], transition[0]['y']) == (900, 628)
         assert transition[1]['renderAlpha'] == 0
-        assert (transition[2]['x'], transition[2]['y']) == (665, 470)
+        assert (transition[2]['x'], transition[2]['y']) == (665, 490)
         # Walk each actor through all destinations in the real engine, rendering every arrival.
         page.evaluate('''()=>{
           const e=__officeDebug;e.state.running=true;
