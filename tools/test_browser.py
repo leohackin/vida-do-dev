@@ -11,7 +11,7 @@ ENGINE = os.environ.get('BROWSER_ENGINE', 'chromium')
 if ENGINE not in ('chromium', 'firefox', 'webkit'):
     raise ValueError(f'Unsupported BROWSER_ENGINE: {ENGINE}')
 OUT = BASE / 'artifacts' / ENGINE
-OUT.mkdir(exist_ok=True)
+OUT.mkdir(parents=True, exist_ok=True)
 class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass

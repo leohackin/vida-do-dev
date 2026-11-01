@@ -6,6 +6,10 @@ A próxima iteração amplia a fase 4: suíte parametrizada para Chromium, Firef
 
 Validação local: Chromium 154 aprovou 35 percursos, a chegada em tempo real e a pausa/retomada, sem exceções. Emissão Canvas: mediana 0,1 ms, p95 0,2 ms nesta máquina, sem equivalência a FPS/GPU. Captura de personagens inspecionada; poses e oclusões ainda exigem evolução artística. Firefox local não completou o lançamento: o diagnóstico registra erro de sandbox em uid_map e falha de framebuffer SWGL. WebKit local não iniciou por bibliotecas GTK4/Graphene/Harfbuzz/Manette/Hyphen/GLES ausentes. Esses dois motores precisam ser validados no CI com dependências instaladas; não são resultados aprovados locais. WebKit automatizado não é Safari real; dispositivos físicos e aprovação artística continuam pendentes.
 
+O CI inicial desta iteração revelou que a criação de `artifacts/<engine>/` falhava em checkout limpo, pois a pasta pai ainda não existia. Corrigido com criação dos diretórios pais; o resultado local anterior reutilizava uma pasta de evidências existente e não detectou esse caso. A nova execução de CI precisa passar antes do merge.
+
+A revisão adicional de progresso da simulação seed 42 revelou cinco atores sem deslocamento por mais de 160 segundos ao fim dos quatro minutos. O teste anterior de separação física não detectava esse impasse; isso invalida qualquer interpretação de que a simulação comprovava continuidade das rotinas. A correção e uma asserção de progresso estão em investigação separada. A fase 1 permanece parcial.
+
 Nenhum PNG foi alterado. As quatro fases permanecem parciais conforme o detalhamento abaixo.
 
 ---
