@@ -1,4 +1,4 @@
-# Vida do Dev — office.exe v0.10
+# Vida do Dev — office.exe v0.11
 
 Para a prévia de arte em arquivo único: `python tools/build_art_review.py` e abra
 `artifacts/art-review-standalone.html`. Ela inclui imagens e metadados e pode ser
