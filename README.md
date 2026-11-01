@@ -53,6 +53,14 @@ python -m playwright install --with-deps chromium
 python tools/test_browser.py
 ```
 
-Quando já existe Chromium no sistema, o teste o utiliza sem download. Também aceita `BROWSER_EXECUTABLE=/caminho/do/chromium`. Os testes de lógica não exigem dependências externas. Capturas e relatório ficam em `artifacts/` e são ignorados pelo Git; o workflow os retém como artefato.
+Quando já existe Chromium no sistema, o teste o utiliza sem download. Também aceita `BROWSER_EXECUTABLE=/caminho/do/chromium`. Os testes de lógica não exigem dependências externas. Capturas e relatório ficam em `artifacts/<engine>/` e são ignorados pelo Git; o workflow os retém como artefato.
 
 Para servir o jogo localmente: `python -m http.server 8000`, na raiz do checkout. Abertura direta de `index.html` continua suportada. Não execute `tools/build_assets.py` durante uma instalação normal: ele regenera a arte. O escritório ainda contém pessoas pintadas no fundo; as interações novas usam pontos de aproximação, sem cadeiras reconstruídas. Consulte `STATUS.md` para as limitações e evidências por fase.
+
+A suíte também aceita `BROWSER_ENGINE=firefox` ou `BROWSER_ENGINE=webkit`.
+Instale o motor escolhido com `python -m playwright install --with-deps firefox`
+(ou `webkit`). O CI executa os três motores em jobs separados, com artefatos
+individuais. Além dos 35 percursos acelerados por motor, a suíte verifica uma
+chegada usando o relógio real de `requestAnimationFrame` e pausa/retomada pelos
+controles da página. WebKit do Playwright não equivale a Safari em dispositivo
+Apple, e o viewport móvel não equivale a um aparelho físico.
