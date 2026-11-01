@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.4
+/* Vida do Dev · illustrated office engine v0.6
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -7,23 +7,40 @@
 const cv=document.getElementById('scene'),ctx=cv.getContext('2d',{alpha:true});
 const $=id=>document.getElementById(id);
 const W=1536,H=1024,images={};
-const imageSources={background:'assets/office-illustration.png',guest:'assets/guest-walksheet.png',dev:'assets/dev-sheet.png',ana:'assets/ana-sheet.png',ops:'assets/ops-sheet.png'};
+const imageSources={background:'assets/office-illustration.png',guest:'assets/guest-walksheet.png',dev:'assets/dev-sheet.png',ana:'assets/ana-sheet.png',ops:'assets/ops-sheet.png',pm:'assets/pm-sheet.png'};
 let loaded=0;Object.entries(imageSources).forEach(([name,url])=>{const img=new Image();img.src=url;img.onload=()=>{loaded++;};img.onerror=()=>{console.error('Erro ao carregar sprite',url);};images[name]=img;});
-const nodes={
- entry:[950,945],hall:[926,824],left:[788,745],desk:[673,817],lowerDesk:[604,792],coffeePass:[554,613],coffeeHall:[510,502],coffee:[451,343],
- bathPass:[610,313],bathroom:[860,248],meetingHall:[983,424],meeting:[1294,318],lounge:[784,621],sofa:[806,645],
- right:[1139,758],arcadeHall:[1250,720],arcade:[1238,657]
-};
-const links=[['entry','hall'],['hall','left'],['hall','right'],['left','desk'],['desk','lowerDesk'],['left','lounge'],['lounge','sofa'],['lounge','coffeePass'],['coffeePass','coffeeHall'],['coffeeHall','coffee'],['coffeeHall','bathPass'],['bathPass','bathroom'],['lounge','meetingHall'],['meetingHall','meeting'],['right','arcadeHall'],['arcadeHall','arcade'],['right','meetingHall'],['hall','lounge'],['desk','coffeePass']];
-const adj=Object.fromEntries(Object.keys(nodes).map(k=>[k,[]]));for(const [a,b] of links){adj[a].push(b);adj[b].push(a);}
+// Hand-authored foot-space map: furniture is solid, targets remain on visible floor.
+// Enclosed meeting room and occupied seats are approached from the corridor.
+const boundary=[[265,410],[540,405],[575,325],[895,210],[920,385],[1080,435],[1120,630],[970,815],[945,880],[875,866],[765,840],[470,815],[385,730],[265,660]];
+const obstacles=[
+ [[805,370],[904,400],[914,455],[817,427]],
+ [[640,302],[667,302],[669,321],[638,321]],
+ [[736,309],[765,309],[771,330],[730,330]],
+ [[320,213],[493,214],[550,268],[550,395],[380,398],[321,355]],
+ [[575,407],[650,367],[827,381],[847,462],[800,533],[658,558],[570,510]],
+ [[680,472],[748,450],[788,519],[739,555],[688,547]],
+ [[770,544],[815,534],[868,581],[843,628],[784,636],[752,599]],
+ [[840,526],[922,500],[978,530],[942,580],[865,581]],
+ [[280,447],[431,442],[502,544],[365,636],[290,589]],
+ [[420,661],[604,581],[706,650],[647,736],[473,797]],
+ [[561,800],[746,727],[864,788],[848,892],[683,928]],
+ [[990,651],[1074,618],[1271,735],[1238,808],[1110,844],[973,769]]
+];
+const floor=OfficeNavigation.createFloor(boundary,obstacles,12,6);
+const nodes={entry:[936,852],hall:[930,816],desk:[888,744],coffee:[600,350],bathroom:[850,245],meeting:[1050,506],sofa:[900,628],arcade:[1090,604]};
 const destinations={
  coffee:{node:'coffee',label:'Copa',action:'coffee',bubble:'Sem café, sem deploy.'},
  desk:{node:'desk',label:'Estações',action:'type',bubble:'Passou local. Em produção veremos.'},
  meeting:{node:'meeting',label:'Sala de reunião',action:'sit',bubble:'Essa reunião podia ser um e-mail.'},
  lounge:{node:'sofa',label:'Descompressão',action:'sit',bubble:'Cinco minutinhos de paz.'},
- arcade:{node:'arcade',label:'Fliperama',action:'sit',bubble:'Mais uma fase e eu volto.'},
+ arcade:{node:'arcade',label:'Acesso ao fliperama',action:'sit',bubble:'Mais uma fase e eu volto.'},
  bathroom:{node:'bathroom',label:'Banheiro',action:'hide',bubble:'AFK. Já volto.'},
  entrance:{node:'entry',label:'Entrada',action:'idle',bubble:'Bora codar. Ou tentar.'}
+};
+const interactionSlots={
+ coffee:[[600,350],[628,345]],desk:[[888,744],[904,704]],
+ meeting:[[1050,506],[1068,546]],lounge:[[900,628],[942,650]],
+ arcade:[[1090,604]],bathroom:[[850,245]],entrance:[[936,852],[908,832]]
 };
 const npcEvents=[
  {name:'SÓ MAIS UM COMMIT',desc:'O Dev jurou que este é o último de hoje.',lines:['só mais um commit...','o último. agora vai.'],dest:'desk'},
@@ -37,39 +54,72 @@ const npcEvents=[
  {name:'REUNIÃO QUE NÃO ACABA',desc:'O requisito mudou enquanto a apresentação carregava.',lines:['mudança de escopo...', 'mas é só um botão.'],dest:'meeting'}
 ];
 const actorDefs=[
- {id:'guest',name:'Visitante',img:'guest',x:922,y:813,speed:95,delay:0,home:'desk',active:true},
+ {id:'guest',name:'Visitante',img:'guest',x:930,y:816,speed:95,delay:0,home:'desk',active:true},
  {id:'dev',name:'O Dev',img:'dev',x:1075,y:865,speed:81,delay:1.6,home:'lounge',active:false},
  {id:'ana',name:'Ana',img:'ana',x:1319,y:815,speed:105,delay:3,home:'desk',active:false},
+ {id:'pm',name:'PM',img:'pm',x:1056,y:900,speed:90,delay:7,home:'meeting',active:false},
  {id:'ops',name:'Ops',img:'ops',x:716,y:835,speed:87,delay:5,home:'coffee',active:false}
 ];
-const actors=actorDefs.map(v=>({...v,route:[],goal:null,pose:'idle',elapsed:0,wait:2+v.delay,dir:0,bubble:null,blink:0,paused:false,visible:true,walking:false,alpha:1}));
+const actors=actorDefs.map(v=>({...v,route:[],goal:null,pose:'idle',elapsed:0,wait:2+v.delay,dir:0,bubble:null,blink:0,paused:false,visible:true,walking:false,alpha:1,slot:null,transition:null,motionTime:0,blocked:0}));
 const findActor=id=>actors.find(a=>a.id===id);
 const state={running:true,speed:1,zoom:1,panX:0,panY:0,markers:false,time:'real',season:'auto',spawnTimer:14,selected:'guest',timer:0,eventTimer:11,storyTimer:0,ambience:false,part:[],fx:[],hover:null,manual:false};
 let last=performance.now(),audio=null,pan=null,nowTime=Date.now();
 const rand=(a,b)=>a+Math.random()*(b-a),choose=a=>a[Math.floor(Math.random()*a.length)],dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 function day(){return new Date();}
 function activeSeason(){if(state.season!=='auto')return state.season;let d=day(),m=d.getMonth()+1,k=d.getDate();if(m===10&&k>=28)return'halloween';if(m===12&&k>=10&&k<=26)return'christmas';let prog=new Date(d.getFullYear(),0,1);let n=Math.floor((Date.UTC(d.getFullYear(),m-1,k)-Date.UTC(d.getFullYear(),0,1))/86400000)+1;if(n===256)return'programmer';return'normal';}
-function closestNode(p){return Object.keys(nodes).reduce((best,k)=>dist(p,nodes[k])<dist(p,nodes[best])?k:best,'hall');}
 const slots=OfficeNavigation.createSlots();
-function pathBetween(a,b){
- const start=closestNode([a.x,a.y]),end=destinations[b]?.node;
- const path=OfficeNavigation.shortestPath(nodes,links,start,end);
- if(!path)return null;
- return path.map(n=>({x:nodes[n][0],y:nodes[n][1]})).filter((p,i)=>i!==0||dist([a.x,a.y],[p.x,p.y])>0.01);
+const queues=Object.fromEntries(Object.keys(destinations).map(k=>[k,[]]));
+let queueTimer=0;
+function cancelQueue(id){for(const queue of Object.values(queues)){const i=queue.indexOf(id);if(i>=0)queue.splice(i,1);}}
+// The cafe aisle has no room for two footprints. Reserve the entire passage
+// before entering rather than letting opposing actors meet in its narrow middle.
+let passageOwner=null;
+function inPassage(x,y){return x>=540&&x<=606&&y>=390&&y<=546;}
+function crossesPassage(a){
+ let start=[a.x,a.y];
+ for(const p of a.route){const n=Math.max(1,Math.ceil(dist(start,[p.x,p.y])/6));
+  for(let i=0;i<=n;i++)if(inPassage(start[0]+(p.x-start[0])*i/n,start[1]+(p.y-start[1])*i/n))return true;
+  start=[p.x,p.y];
+ }return false;
+}
+function pathBetween(a,b,point=nodes[destinations[b]?.node],blocked=[]){
+ const path=point&&floor.route([a.x,a.y],point,blocked);
+ return path?path.filter(p=>dist([a.x,a.y],p)>.01).map(p=>({x:p[0],y:p[1]})):path;
 }
 function sendTo(a,which,user=false){
  if(!a||!destinations[which])return false;
  const origin=a.active?a:{x:nodes.entry[0],y:nodes.entry[1]};
- const route=pathBetween(origin,which);
- if(!route){if(user)setStory('Não há caminho disponível para esse destino.');return false;}
- if(!slots.reserve(a.id,which)){
-  if(user)setStory(`${destinations[which].label} está ocupado. Escolha outro destino ou tente novamente em instantes.`);
+ let choice=null;
+ for(const [i,point] of interactionSlots[which].entries()){
+  const key=`${which}:${i}`,owner=slots.owner(key);
+  if(owner!==undefined&&owner!==a.id)continue;
+  const route=pathBetween(origin,which,point);
+  if(!route)continue;
+  const length=route.reduce((v,p,i)=>v+dist(i?[route[i-1].x,route[i-1].y]:[origin.x,origin.y],[p.x,p.y]),0);
+  if(!choice||length<choice.length)choice={key,route,length};
+ }
+ const capacityFull=interactionSlots[which].every((_,i)=>slots.owner(`${which}:${i}`)!==undefined&&slots.owner(`${which}:${i}`)!==a.id);
+ const ahead=queues[which][0]&&queues[which][0]!==a.id;
+ if(!choice||ahead){
+  if(user&&(capacityFull||ahead)){
+   // Repeated clicks on the same destination must not surrender FIFO priority.
+   if(!queues[which].includes(a.id)){cancelQueue(a.id);queues[which].push(a.id);}
+   setStory(`${a.name} está na fila de ${destinations[which].label.toLowerCase()}. A rota atual foi mantida.`);
+  }
+  else if(user)setStory('Não há caminho seguro disponível. A rota atual foi mantida.');
   return false;
  }
+ // Entry is a physical spawn point too; do not materialize on another actor.
+ if(!a.active&&actors.some(other=>other!==a&&other.active&&other.visible&&dist([other.x,other.y],nodes.entry)<floor.radius*2))return false;
+ if(!a.visible&&actors.some(o=>o!==a&&o.active&&o.visible&&dist([o.x,o.y],[a.x,a.y])<floor.radius*2))return false;
+ if(!slots.reserve(a.id,choice.key))return false;
+ cancelQueue(a.id);
  if(!a.active){a.active=true;a.x=nodes.entry[0];a.y=nodes.entry[1];}
- a.route=route;a.goal=which;a.pose='walk';a.visible=true;a.walking=true;a.wait=0;a.bubble=null;a.alpha=1;
- if(user){state.manual=true;setStory(`${a.name} está indo para ${destinations[which].label.toLowerCase()}.`);setStatus('A CAMINHO',`${a.name} → ${destinations[which].label}`);speech(a,choose(['já vou!','só terminar uma coisa...','indo!']),2.2);}
- if(!route.length)arrive(a);
+ const wasSeated=['sit','type'].includes(a.pose)&&!a.walking;
+ a.slot=choice.key;a.route=choice.route;a.goal=which;a.pose='walk';a.visible=true;a.walking=true;a.wait=0;a.bubble=null;a.alpha=1;a.motionTime=0;a.blocked=0;
+ a.transition=wasSeated?{kind:'stand',t:0,duration:.35}:null;
+ if(user){state.manual=true;setStory(`${a.name} está indo para ${destinations[which].label.toLowerCase()}.`);setStatus('A CAMINHO',`${a.name} → ${destinations[which].label}`);speech(a,'já vou!',2.2);}
+ if(!a.route.length)arrive(a);
  return true;
 }
 function speech(a,msg,secs=4){a.bubble={text:msg,t:secs};}
@@ -79,45 +129,65 @@ function playEvent(custom){let ev=custom||choose(npcEvents);setStatus(ev.name,ev
  const lead=findActor(state.selected)||actors[0];sendTo(lead,ev.dest);speech(lead,choose(ev.lines),5);state.eventTimer=rand(19,30);
  for(let i=0;i<25;i++)state.fx.push({x:rand(700,1330),y:rand(280,820),dy:rand(15,50),t:rand(1,2.6),sz:rand(2,5),col:choose(['#ffd45e','#93dcff','#e9a3d3','#f6faf8'])});
 }
-function arrive(a){a.walking=false;a.route=[];let d=destinations[a.goal]||destinations.desk;a.pose=d.action;a.wait=rand(5,12);if(a.id==='dev')a.wait+=2;
+function arrive(a){a.walking=false;a.route=[];let d=destinations[a.goal]||destinations.desk;a.pose=d.action;a.transition=['sit','type'].includes(d.action)?{kind:'sit',t:0,duration:.35}:null;a.wait=rand(5,12);if(a.id==='dev')a.wait+=2;
  if(a.goal==='bathroom'){a.visible=false;a.wait=rand(3,6);}
- else {a.visible=true;a.alpha=1; if(Math.random()<.72)speech(a,d.bubble,rand(3,5));}
+ else {a.visible=true;a.alpha=1; if(Math.random()<.72)speech(a,d.bubble,rand(3,5));
+  const colleague=actors.find(o=>o!==a&&o.active&&o.visible&&!o.walking&&o.goal===a.goal&&dist([a.x,a.y],[o.x,o.y])<100);
+  if(colleague){const replies={dev:'só mais um commit...',ana:'no mobile também?',ops:'e o rollback?',pm:'tem 5 min pra uma ideia?',guest:'primeiro, um café.'};speech(a,replies[a.id],4);speech(colleague,replies[colleague.id],5);}
+ }
 }
 function tick(dt){if(!state.running)return;dt=Math.min(dt,.08)*state.speed;state.timer+=dt;state.eventTimer-=dt;
  if(state.eventTimer<0)playEvent();
- state.spawnTimer-=dt;if(state.spawnTimer<=0){let newGuy=actors.find(a=>!a.active&&a.id!=='guest');if(newGuy){sendTo(newGuy,choose(['coffee','desk','meeting','arcade']));setStory(`${newGuy.name} acabou de chegar ao escritório.`);speech(newGuy,'bom dia, pessoal!',4);}state.spawnTimer=rand(45,70);}
- for(let a of actors){if(!a.active)continue;a.elapsed+=dt;if(a.bubble){a.bubble.t-=dt;if(a.bubble.t<=0)a.bubble=null;}
-  if(a.walking&&a.route.length){let p=a.route[0],dx=p.x-a.x,dy=p.y-a.y,l=Math.hypot(dx,dy);let step=a.speed*dt;
-   if(l<step+1){a.x=p.x;a.y=p.y;a.route.shift();if(!a.route.length)arrive(a);}
-   else{a.x+=dx/l*step;a.y+=dy/l*step;a.dir=dx>=0?0:1;}
-  }else if(!a.walking){a.wait-=dt;if(a.wait<=0){const options=a.id==='dev'?['coffee','desk','lounge','meeting','bathroom']:a.id==='ops'?['desk','coffee','arcade','bathroom']:['coffee','meeting','arcade','lounge','desk','bathroom'];if(!sendTo(a,choose(options)))a.wait=1;}}
+ state.spawnTimer-=dt;if(state.spawnTimer<=0){const newGuy=actors.find(a=>!a.active&&a.id!=='guest');
+  const spawned=newGuy&&sendTo(newGuy,newGuy.home);
+  if(spawned){setStory(`${newGuy.name} acabou de chegar ao escritório.`);speech(newGuy,'bom dia, pessoal!',4);}state.spawnTimer=spawned?rand(15,25):1;
+ }
+ queueTimer-=dt;if(queueTimer<=0){for(const [dest,queue] of Object.entries(queues))if(queue.length)sendTo(findActor(queue[0]),dest);queueTimer=.5;}
+ const owner=findActor(passageOwner);if(owner&&(!owner.walking||(!crossesPassage(owner)&&!inPassage(owner.x,owner.y))))passageOwner=null;
+ for(let a of actors){if(!a.active)continue;a.elapsed+=dt;if(a.transition){a.transition.t+=dt;if(a.transition.t>=a.transition.duration)a.transition=null;}if(a.bubble){a.bubble.t-=dt;if(a.bubble.t<=0)a.bubble=null;}
+  if(a.walking&&a.route.length){
+   if(a.transition)continue;
+   if(crossesPassage(a)){if(passageOwner===null)passageOwner=a.id;if(passageOwner!==a.id)continue;}
+   let p=a.route[0],dx=p.x-a.x,dy=p.y-a.y,l=Math.hypot(dx,dy),step=Math.min(a.speed*dt,l);
+   const next=l?[a.x+dx/l*step,a.y+dy/l*step]:[a.x,a.y];
+   const others=actors.filter(o=>o!==a&&o.active&&o.visible);
+   if(others.some(o=>dist(next,[o.x,o.y])<floor.radius*2)){
+    a.blocked+=dt;
+    if(a.blocked>.5){const target=interactionSlots[a.goal][Number(a.slot.split(':')[1])];const route=pathBetween(a,a.goal,target,others.map(o=>[o.x,o.y]));if(route)a.route=route;a.blocked=0;}
+    continue;
+   }
+   a.blocked=0;a.motionTime+=dt;a.x=next[0];a.y=next[1];a.dir=dx>=0?0:1;
+   if(l<=step+.001){a.route.shift();if(!a.route.length)arrive(a);}
+  }else if(!a.walking){a.wait-=dt;if(a.wait<=0){const options=a.id==='dev'?['coffee','desk','lounge','meeting','bathroom']:a.id==='ops'?['desk','coffee','arcade','bathroom']:['coffee','meeting','arcade','lounge','desk','bathroom'];if(Object.values(queues).some(q=>q.includes(a.id))||!sendTo(a,choose(a.id==='pm'?['meeting','coffee','desk']:options)))a.wait=1;}}
  }
  for(let f of state.fx){f.y-=f.dy*dt;f.t-=dt;f.x+=Math.sin(state.timer*3+f.y)*dt*18;}state.fx=state.fx.filter(f=>f.t>0);
 }
 function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!im?.complete||!im.naturalWidth)return;
- let x=a.x,y=a.y,t=a.elapsed;let step=a.walking?Math.floor(t*9)%6:0;let phase=a.walking?Math.sin(t*9)*1.3:Math.sin(t*1.2)*.45;
+ let x=a.x,y=a.y,t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
  let frameX=step,frameY=0,sw=78,sh=183,dw=78,dh=183;
  if(a.img==='dev'){sw=112;sh=202;dw=103;dh=187;
-  frameY=a.pose==='walk'?1:a.pose==='coffee'?2:a.pose==='type'?3:a.pose==='sit'?4:0;
+  frameY=a.pose==='walk'?1:a.pose==='coffee'?2:a.pose==='type'?3:0;
   frameX=a.walking?step:(a.pose==='coffee'||a.pose==='type'?Math.floor(t*4)%6:0);
  }else{frameY=a.dir===1?1:0;frameX=a.walking?step:0;}
- const sitting=a.pose==='sit'&&!a.walking,typing=a.pose==='type'&&!a.walking;
- if(sitting){dw*=.96;dh*=.88;y-=15;}
+ const sitting=['sit','type'].includes(a.pose)&&!a.walking,typing=a.pose==='type'&&!a.walking;
+ const progress=a.transition?Math.min(1,a.transition.t/a.transition.duration):1;
+ const seated=a.transition?(a.transition.kind==='sit'?progress:1-progress):(sitting?1:0);
+ dh*=1-.12*seated;y-=15*seated;
  if(typing){y+=Math.sin(t*8)*1.3;}
  const flicker=(a.id==='dev'&&!a.walking&&a.pose==='idle'&&Math.sin(t*1.47)>.996); // blink
  ctx.save();ctx.globalAlpha=a.alpha;
  // soft contact shadow, no dark rectangle around transparent sprites
  ctx.fillStyle='rgba(29,26,25,.30)';ctx.beginPath();ctx.ellipse(x,y+1,24*(sitting?1.25:1),6,0,0,2*Math.PI);ctx.fill();
- ctx.translate(x-dw/2,y-dh+phase);if(sitting)ctx.translate(0,27);
+ ctx.translate(x-dw/2,y-dh+phase);ctx.translate(0,27*seated);
  ctx.imageSmoothingEnabled=true;
- if(sitting){
-    // Actual seated silhouette: upper body stays upright, thighs bend horizontally,
+ if(seated>0){
+    // Procedural seated silhouette: upper body stays upright, thighs bend horizontally,
     // calves and shoes drop from the seat. Reuses pixels from the source illustration.
     const top=Math.round(sh*.69),leg=Math.round(sh*.30);
-    ctx.drawImage(im,frameX*sw,frameY*sh,sw,top,0,0,dw,dh*.79);
-    ctx.save();ctx.translate(dw*.48,dh*.78);ctx.rotate(-.25);
-    ctx.drawImage(im,frameX*sw+sw*.19,frameY*sh+top,sw*.56,leg,0,0,dw*.57,dh*.19);ctx.restore();
-    ctx.drawImage(im,frameX*sw+sw*.48,frameY*sh+Math.round(sh*.81),sw*.33,Math.round(sh*.17),dw*.64,dh*.84,dw*.28,dh*.15);
+    ctx.drawImage(im,frameX*sw,frameY*sh,sw,top,0,0,dw,dh*(.69+.10*seated));
+    ctx.save();ctx.translate(dw*.48,dh*(.69+.09*seated));ctx.rotate(-.25*seated);
+    ctx.drawImage(im,frameX*sw+sw*.19,frameY*sh+top,sw*.56,leg,0,0,dw*.57,dh*(.30-.11*seated));ctx.restore();
+    ctx.drawImage(im,frameX*sw+sw*.48,frameY*sh+Math.round(sh*.81),sw*.33,Math.round(sh*.17),dw*(.48+.16*seated),dh*(.81+.03*seated),dw*(.33-.05*seated),dh*(.17-.02*seated));
    }else ctx.drawImage(im,frameX*sw,frameY*sh,sw,sh,0,0,dw,dh);
  // tiny typing keyboard motion superimposed only while at desk
  if(typing){ctx.fillStyle='#ecbc83';ctx.fillRect(dw*.53,dh*.60+Math.sin(t*12)*2,8,3);}
@@ -183,10 +253,11 @@ function inHotspot(p){let direct=hotspots.find(v=>p.x>=v.area[0]&&p.x<=v.area[2]
 cv.addEventListener('pointerdown',e=>{let p=scenePoint(e);pan={startX:e.clientX,startY:e.clientY,px:state.panX,py:state.panY,moved:false,p,down:Date.now()};cv.setPointerCapture(e.pointerId);});
 cv.addEventListener('pointermove',e=>{if(pan){let dx=(e.clientX-pan.startX)/cv.clientWidth*W,dy=(e.clientY-pan.startY)/cv.clientHeight*H;if(Math.abs(dx)+Math.abs(dy)>7){pan.moved=true;state.panX=pan.px+dx;state.panY=pan.py+dy;}return;}let p=scenePoint(e),k=inHotspot(p),tip=$('hoverTip');if(k){tip.hidden=false;tip.textContent=destinations[k].label+' · clique para visitar';let br=cv.getBoundingClientRect();tip.style.left=Math.min(br.width-170,Math.max(6,e.clientX-br.left+14))+'px';tip.style.top=Math.min(br.height-40,Math.max(5,e.clientY-br.top-39))+'px';}else tip.hidden=true;});
 cv.addEventListener('pointerup',e=>{if(!pan)return;let moved=pan.moved,p=pan.p;pan=null;if(moved)return;let picked=[...actors].reverse().find(a=>a.active&&a.visible&&Math.abs(a.x-p.x)<55&&p.y<a.y+20&&p.y>a.y-185);if(picked){state.selected=picked.id;$('character').value=picked.id;speech(picked,choose(['opa!','fala, dev!','tô de boa.','só mais um commit...']),3);setStory(`Acompanhando ${picked.name}. Clique em um ambiente para ele ir até lá.`);return;}let k=inHotspot(p);if(k){sendTo(selected(),k,true);blip(660,.05);}});
+cv.addEventListener('pointercancel',()=>{pan=null;});
 cv.addEventListener('pointerleave',()=>{$('hoverTip').hidden=true;});
 cv.addEventListener('wheel',e=>{e.preventDefault();setZoom(state.zoom+(e.deltaY<0?.12:-.12));},{passive:false});
 document.addEventListener('keydown',e=>{if(['SELECT','INPUT'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();$('pause').click();}if(e.key.toLowerCase()==='e')$('surprise').click();if(e.key.toLowerCase()==='m')$('markers').click();if(e.key==='Escape'&&document.fullscreenElement)document.exitFullscreen();});
 function blip(freq=440,duration=.08){if(!state.ambience)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),gain=audio.createGain();o.type='sine';o.frequency.value=freq;gain.gain.value=.018;gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+duration);o.connect(gain);gain.connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}}
 $('sound').onclick=()=>{state.ambience=!state.ambience;$('soundIcon').textContent=state.ambience?'♫':'♪';$('soundLabel').textContent=state.ambience?'Som ligado':'Som desligado';if(state.ambience)blip(660,.12);};
 setTimeout(()=>{let a=findActor('guest');sendTo(a,'coffee');setStatus('CAFÉ ANTES DE TUDO','Alguém começou o dia na copa.');setStory('O visitante vai buscar café. O Dev já está calculando quanto tempo falta para sexta.');},1600);
-window.__officeDebug={state,actors,sendTo,playEvent,images,destinations,nodes,links,slots,pathBetween,tick,arrive};
+window.__officeDebug={state,actors,floor,interactionSlots,render,imgDraw,sendTo,playEvent,images,destinations,nodes,slots,queues,cancelQueue,pathBetween,tick,arrive};
