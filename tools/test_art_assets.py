@@ -25,7 +25,7 @@ class ArtAssets(unittest.TestCase):
 
     def test_runtime_png_budget(self):
         runtime = ['office-clean.png', 'reference-original.png', 'guest-walksheet.png',
-                   'dev-sheet.png', 'dev-directional.png', 'ana-sheet.png',
+                   'dev-sheet.png', 'dev-directional.png', 'seated-atlas.png', 'ana-sheet.png',
                    'ops-sheet.png', 'pm-sheet.png']
         total = sum((BASE / 'assets' / name).stat().st_size for name in runtime)
         self.assertLess(total, 20 * 1024 * 1024, f'Runtime PNGs total {total / 1024 / 1024:.1f} MiB')
@@ -37,6 +37,7 @@ class ArtAssets(unittest.TestCase):
         self.assertEqual(png_size(BASE / 'assets/proposals/clean-plate-review.png'), (1536, 1024))
         self.assertEqual(png_size(BASE / 'assets/office-clean.png'), (1536, 1024))
         self.assertEqual(png_size(BASE / 'assets/dev-directional.png'), (1254, 1254))
+        self.assertEqual(png_size(BASE / 'assets/seated-atlas.png'), (2172, 724))
         self.assertEqual(len(metadata['directions']), 4)
         self.assertEqual(len(metadata['frames']), 4)
         width, height = metadata['size']

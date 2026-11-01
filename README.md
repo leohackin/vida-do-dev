@@ -1,4 +1,4 @@
-# Vida do Dev — office.exe v0.9
+# Vida do Dev — office.exe v0.10
 
 Para a prévia de arte em arquivo único: `python tools/build_art_review.py` e abra
 `artifacts/art-review-standalone.html`. Ela inclui imagens e metadados e pode ser
@@ -7,7 +7,8 @@ aberta fora da pasta do repositório, sem servidor. A arte continua em revisão.
 Esta versão evolui a v0.5 com mapa de obstáculos, posições individuais, filas, transições do Dev e PM independente. As quatro fases continuam parciais. Consulte `STATUS.md` para testes, fases e limitações.
 
 A cena usa um fundo reconstruído sem pessoas, gatos ou balões pintados. O Dev
-usa o atlas limpo em caminhada, espera, café, digitação e transições sentadas;
+usa o atlas limpo em caminhada, espera, café e digitação, além de um atlas
+dedicado com anatomia sentada para os cinco personagens;
 o sheet de interação com o artefato cinza deixou de ser renderizado. A marca
 VIDA DO DEV é recortada diretamente da referência preservada.
 
@@ -40,6 +41,7 @@ Extraia o ZIP e abra `index.html` no Chrome, Firefox ou Safari. Sem servidor, de
 - `assets/office-illustration.png`: **mesma composição original**; região do personagem de pé restaurada para permitir que ele saia andando.
 - `assets/guest-walksheet.png`: personagem PNG extraído da imagem, com seis quadros por direção.
 - `assets/dev-sheet.png`: Dev independente com óculos e camisa DE BOA, animações de caminhar, café, digitar e sentar.
+- `assets/seated-atlas.png`: poses sentadas consistentes dos cinco personagens, com joelhos, pernas e âncora comuns.
 - `assets/ana-sheet.png`, `assets/ops-sheet.png`: variantes de roupa preservando a textura do ator extraído.
 - `office.js`: engine de Canvas2D, mapa de piso, rotas, ordenação, oclusão de objetos, comportamento, diálogos, eventos, interface, pan e zoom.
 - `tools/build_assets.py`: pipeline local para separar a ilustração e sprites; requer Pillow e OpenCV.

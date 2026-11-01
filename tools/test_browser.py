@@ -63,6 +63,16 @@ try:
         page.wait_for_function('!__officeDebug.actors[0].walking', timeout=15000)
         page.locator('#pause').click()
         assert page.evaluate('__officeDebug.actors[0].pose') == 'type'
+        # Sitting changes depth only while fully hidden; it must never slide a
+        # visible body through the furniture between approach point and seat.
+        transition = page.evaluate('''()=>{const e=__officeDebug,a=e.actors[0];
+          a.x=900;a.y=628;a.slot='lounge:0';a.pose='sit';a.alpha=1;
+          const at=t=>{a.transition={kind:'sit',t,duration:.5};return e.seatRenderState(a,true)};
+          const result=[at(.1),at(.25),at(.4)];a.transition=null;return result;
+        }''')
+        assert (transition[0]['x'], transition[0]['y']) == (900, 628)
+        assert transition[1]['renderAlpha'] == 0
+        assert (transition[2]['x'], transition[2]['y']) == (700, 500)
         # Walk each actor through all destinations in the real engine, rendering every arrival.
         page.evaluate('''()=>{
           const e=__officeDebug;e.state.running=true;
