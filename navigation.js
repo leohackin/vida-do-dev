@@ -44,6 +44,13 @@
   const t=den?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/den)):0;
   return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);
  }
+ function segmentSeparation(a,b,c,d){
+  const cross=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+  const overlaps=(a,b,c,d)=>Math.max(Math.min(a,b),Math.min(c,d))<=Math.min(Math.max(a,b),Math.max(c,d));
+  if(overlaps(a[0],b[0],c[0],d[0])&&overlaps(a[1],b[1],c[1],d[1])&&
+     cross(a,b,c)*cross(a,b,d)<=0&&cross(c,d,a)*cross(c,d,b)<=0)return 0;
+  return Math.min(segmentDistance(a,c,d),segmentDistance(b,c,d),segmentDistance(c,a,b),segmentDistance(d,a,b));
+ }
  function createFloor(boundary,obstacles,radius=12,cell=12){
   const clear=p=>pointInPolygon(p,boundary)&&
    boundary.every((a,i)=>segmentDistance(p,a,boundary[(i+1)%boundary.length])>=radius)&&
@@ -53,9 +60,9 @@
    const key=a.join(',')+':'+b.join(',');
    let valid=segmentCache.get(key);
    if(valid===undefined){
-    valid=true;
-    const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3));
-    for(let i=0;i<=n;i++)if(!clear([a[0]+(b[0]-a[0])*i/n,a[1]+(b[1]-a[1])*i/n])){valid=false;break;}
+    // Continuous swept footprint: sampling can miss a near-tangent corner.
+    valid=clear(a)&&clear(b)&&[boundary,...obstacles].every(poly=>
+     poly.every((p,i)=>segmentSeparation(a,b,p,poly[(i+1)%poly.length])>=radius));
     if(segmentCache.size<50000)segmentCache.set(key,valid);
    }
    return valid&&!blocked.some(q=>segmentDistance(q,a,b)<radius*2);

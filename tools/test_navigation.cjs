@@ -39,3 +39,9 @@ test('routing detours around furniture and temporary actors without cutting corn
  for(const p of route){assert.ok(floor.segment(last,p,blocked));last=p;}
  assert.deepEqual(last,end);
 });
+test('continuous footprint rejects a corner missed by three-pixel samples',()=>{
+ const floor=createFloor([[0,0],[300,0],[300,300],[0,300]],[[[120,100],[180,100],[180,200],[120,200]]],12);
+ const a=[98.04,105],b=[128.04,75];
+ assert.ok(floor.clear(a));assert.ok(floor.clear(b));
+ assert.equal(floor.segment(a,b),false);
+});
