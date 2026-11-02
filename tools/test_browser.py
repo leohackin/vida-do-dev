@@ -1,9 +1,11 @@
 """Real HTTP + Canvas smoke test; screenshots are evidence, not visual approval."""
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 from pathlib import Path
 from threading import Thread
 import json, os, shutil
+from PIL import Image, ImageDraw
 from playwright.sync_api import sync_playwright
 
 BASE = Path(__file__).resolve().parent.parent
@@ -109,6 +111,64 @@ try:
           }e.render();
         }''')
         page.screenshot(path=str(OUT/'lounge-pair.png'),full_page=True)
+        # Review every character against the same furniture geometry. These
+        # matrices expose actor-specific padding/anchor defects that a single
+        # representative screenshot cannot catch.
+        matrix_specs = {
+            'lounge': ((525, 330, 875, 610), 'sit'),
+            'meeting': ((1040, 235, 1430, 515), 'sit'),
+            'desk': ((900, 625, 1300, 910), 'type'),
+            'arcade': ((1160, 480, 1510, 770), 'sit'),
+        }
+        for destination, (source_crop, pose) in matrix_specs.items():
+            panels = []
+            for actor_id in ['guest', 'dev', 'ana', 'ops', 'pm']:
+                page.evaluate('''([actorId,destination,pose])=>{const e=__officeDebug;
+                  for(const a of e.actors)a.active=false;
+                  const a=e.actors.find(v=>v.id===actorId),p=e.interactionSlots[destination][0];
+                  a.active=true;a.visible=true;a.walking=false;a.transition=null;a.slot=`${destination}:0`;
+                  a.goal=destination;a.pose=pose;a.x=p[0];a.y=p[1];a.bubble=null;e.render();
+                }''', [actor_id, destination, pose])
+                scene = Image.open(BytesIO(page.locator('#scene').screenshot())).convert('RGB')
+                sx, sy = scene.width / 1536, scene.height / 1024
+                x1, y1, x2, y2 = source_crop
+                panel = scene.crop((round(x1*sx), round(y1*sy), round(x2*sx), round(y2*sy)))
+                ImageDraw.Draw(panel).text((8, 7), actor_id.upper(), fill='white', stroke_width=2, stroke_fill='black')
+                panels.append(panel)
+            sheet = Image.new('RGB', (sum(p.width for p in panels), max(p.height for p in panels)), '#111')
+            offset = 0
+            for panel in panels:
+                sheet.paste(panel, (offset, 0));offset += panel.width
+            sheet.save(OUT/f'visual-matrix-{destination}.png')
+        # Frame-by-frame evidence for both directions of the depth switch. The
+        # actor may fade, but no visible frame may occupy the space between the
+        # safe floor point and the sofa.
+        for kind in ['sit', 'stand']:
+            panels = []
+            for transition_time in [0, .125, .249, .25, .375, .5]:
+                page.evaluate('''([kind,t])=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
+                  const a=e.actors.find(v=>v.id==='guest'),p=e.interactionSlots.lounge[0];
+                  a.active=true;a.visible=true;a.walking=false;a.slot='lounge:0';a.goal='lounge';a.pose='sit';
+                  a.x=p[0];a.y=p[1];a.alpha=1;a.bubble=null;a.transition={kind,t,duration:.5};e.render();
+                }''', [kind, transition_time])
+                scene = Image.open(BytesIO(page.locator('#scene').screenshot())).convert('RGB')
+                sx, sy = scene.width / 1536, scene.height / 1024
+                panel = scene.crop((round(525*sx), round(330*sy), round(935*sx), round(675*sy)))
+                ImageDraw.Draw(panel).text((8, 7), f'{transition_time:.3f}s', fill='white', stroke_width=2, stroke_fill='black')
+                panels.append(panel)
+            sheet = Image.new('RGB', (sum(p.width for p in panels), max(p.height for p in panels)), '#111')
+            offset = 0
+            for panel in panels:
+                sheet.paste(panel, (offset, 0));offset += panel.width
+            sheet.save(OUT/f'transition-lounge-{kind}.png')
+        for destination in ['meeting', 'desk']:
+            page.evaluate('''destination=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
+              for(const [id,index] of [['guest',0],['dev',1]]){const a=e.actors.find(v=>v.id===id),p=e.interactionSlots[destination][index];
+                a.active=true;a.visible=true;a.walking=false;a.transition=null;a.slot=`${destination}:${index}`;
+                a.goal=destination;a.pose='idle';a.x=p[0];a.y=p[1];a.bubble=null;
+              }e.render();
+            }''', destination)
+            page.screenshot(path=str(OUT/f'approaches-{destination}.png'),full_page=True)
         page.evaluate('''()=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
           const dev=e.actors.find(a=>a.id==='dev');dev.active=true;dev.visible=true;dev.walking=false;dev.transition=null;
           dev.x=760;dev.y=610;dev.slot=null;dev.goal='coffee';dev.pose='coffee';dev.bubble=null;e.render();

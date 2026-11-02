@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.13
+/* Vida do Dev · illustrated office engine v0.14
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -27,7 +27,7 @@ const obstacles=[
  [[990,651],[1074,618],[1271,735],[1238,808],[1110,844],[973,769]]
 ];
 const floor=OfficeNavigation.createFloor(boundary,obstacles,12,6);
-const nodes={entry:[936,852],hall:[930,816],desk:[888,744],coffee:[600,350],bathroom:[850,245],meeting:[1050,506],sofa:[900,628],arcade:[1090,604]};
+const nodes={entry:[936,852],hall:[930,816],desk:[888,744],coffee:[600,350],bathroom:[850,245],meeting:[925,625],sofa:[900,628],arcade:[1090,604]};
 const destinations={
  coffee:{node:'coffee',label:'Copa',action:'coffee',bubble:'Sem café, sem deploy.'},
  desk:{node:'desk',label:'Estações',action:'type',bubble:'Passou local. Em produção veremos.'},
@@ -38,8 +38,8 @@ const destinations={
  entrance:{node:'entry',label:'Entrada',action:'idle',bubble:'Bora codar. Ou tentar.'}
 };
 const interactionSlots={
- coffee:[[600,350],[628,345]],desk:[[888,744],[904,704]],
- meeting:[[1050,506],[1068,546]],lounge:[[900,628],[942,650]],
+ coffee:[[600,350],[628,345]],desk:[[888,744],[760,680]],
+ meeting:[[900,700],[1000,600]],lounge:[[900,628],[942,650]],
  arcade:[[1090,604]],bathroom:[[850,245]],entrance:[[936,852],[908,832]]
 };
 // Visual seats are separate from safe foot-space approach points. The logical
@@ -146,7 +146,7 @@ function playEvent(custom){let ev=custom||choose(npcEvents);setStatus(ev.name,ev
 function arrive(a){a.walking=false;a.route=[];let d=destinations[a.goal]||destinations.desk;a.pose=d.action;a.transition=['sit','type'].includes(d.action)?{kind:'sit',t:0,duration:.5}:null;a.wait=rand(5,12);if(a.id==='dev')a.wait+=2;
  if(a.goal==='bathroom'){a.visible=false;a.wait=rand(3,6);}
  else {a.visible=true;a.alpha=1; if(Math.random()<.72)speech(a,d.bubble,rand(3,5));
-  const colleague=actors.find(o=>o!==a&&o.active&&o.visible&&!o.walking&&o.goal===a.goal&&dist([a.x,a.y],[o.x,o.y])<100);
+  const colleague=actors.find(o=>o!==a&&o.active&&o.visible&&!o.walking&&o.goal===a.goal);
   if(colleague){const replies={dev:'só mais um commit...',ana:'no mobile também?',ops:'e o rollback?',pm:'tem 5 min pra uma ideia?',guest:'primeiro, um café.'};speech(a,replies[a.id],4);speech(colleague,replies[colleague.id],5);}
  }
 }
@@ -194,8 +194,12 @@ function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!i
  if(visualSeated&&images.seated?.complete&&images.seated.naturalWidth){
   const cells={guest:[0,434],dev:[434,435],ana:[869,434],ops:[1303,435],pm:[1738,434]};
   const [sx,sw]=cells[a.id],sh=724,targetHeight=138,targetWidth=sw/sh*targetHeight;
-  ctx.save();ctx.globalAlpha=renderAlpha;ctx.fillStyle='rgba(29,26,25,.27)';ctx.beginPath();ctx.ellipse(x,y+1,28,6,0,0,2*Math.PI);ctx.fill();
-  ctx.imageSmoothingEnabled=true;ctx.drawImage(images.seated,sx,0,sw,sh,x-targetWidth/2,y-targetHeight+phase,targetWidth,targetHeight);ctx.restore();
+  // Seated actors are supported by furniture, so a floor shadow under their
+  // shoes makes them look perched on top of the cushion or chair.
+  ctx.save();ctx.globalAlpha=renderAlpha;
+  // Nearest-neighbour downscaling keeps the seated art in the same crisp,
+  // pixel-edged visual language as each character's walking sheet.
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(images.seated,sx,0,sw,sh,x-targetWidth/2,y-targetHeight+phase,targetWidth,targetHeight);ctx.restore();
   return;
  }
  let frameX=step,frameY=0,sw=78,sh=183,dw=78,dh=183;
