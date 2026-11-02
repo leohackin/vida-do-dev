@@ -1,3 +1,21 @@
+# Matriz visual por personagem da v0.14 — 01/11/2026
+
+A validação de um único ator foi substituída por matrizes de cinco personagens
+em sofá, reunião, estações e fliperama, além de storyboards quadro a quadro para
+sentar e levantar. Essa revisão encontrou e corrigiu a troca de identidade da
+Ana, a diferença de estilo das poses sentadas, sombras de piso sobre móveis e
+posições de aproximação que sobrepunham guitarra, vidro ou mesas.
+
+O atlas sentado agora preserva cabelo e cor de camisa de Guest, Dev, Ana, Ops e
+PM. A redução usa pixels nítidos como os sheets de caminhada. O segundo ponto
+das estações foi aproximado de seu assento, e os dois acessos da reunião ficaram
+separados em piso livre antes da troca invisível de profundidade.
+
+As evidências novas são `visual-matrix-{lounge,meeting,desk,arcade}.png`,
+`transition-lounge-{sit,stand}.png` e `approaches-{meeting,desk}.png`.
+
+---
+
 # Centro da almofada esquerda na v0.13 — 01/11/2026
 
 Uma comparação controlada de quatro âncoras revelou que o Visitante estava
