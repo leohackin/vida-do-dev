@@ -11,6 +11,7 @@ export interface InteractionSpot {
   id: string;
   approachNode: string;
   pose: Point & { depth: number; facing: number };
+  transition?: { frontDepth: number; moveAfter: number; occludeAfter: number };
 }
 
 export interface Destination {
@@ -39,8 +40,14 @@ export const destinations: Record<DestinationId, Destination> = {
   lounge: {
     id: 'lounge', label: 'Descompressão', approachNode: 'lounge',
     spots: [
-      { id: 'lounge-left', approachNode: 'lounge', pose: { x: 640, y: 485, depth: 500, facing: 0 } },
-      { id: 'lounge-right', approachNode: 'lounge', pose: { x: 755, y: 480, depth: 500, facing: 0 } },
+      {
+        id: 'lounge-left', approachNode: 'lounge', pose: { x: 640, y: 485, depth: 500, facing: 0 },
+        transition: { frontDepth: 561, moveAfter: .34, occludeAfter: .57 },
+      },
+      {
+        id: 'lounge-right', approachNode: 'lounge', pose: { x: 755, y: 480, depth: 500, facing: 0 },
+        transition: { frontDepth: 561, moveAfter: .34, occludeAfter: .57 },
+      },
     ],
   },
   arcade: {

@@ -47,9 +47,10 @@ export class OfficeActor {
     const spot = this.currentSpot;
     this.sprite.setTexture(`sit-${this.id}`, 5).setDisplaySize(320 / 724 * 183, 183).setAlpha(1);
     this.sprite.play(`sit-${this.id}-exit`);
+    const motion = { progress: 0 };
     this.scene.tweens.add({
-      targets: this.sprite, x: approach.x, y: approach.y, duration: 650, ease: 'Sine.InOut',
-      onUpdate: () => this.sprite.setDepth(this.sprite.y),
+      targets: motion, progress: 1, duration: 650, ease: 'Linear',
+      onUpdate: () => this.placeTransition(spot, spot.pose, approach, motion.progress, true),
       onComplete: () => {
         this.currentSpot = null;
         this.sprite.anims.stop();
@@ -66,9 +67,11 @@ export class OfficeActor {
     this.currentSpot = spot;
     this.sprite.setTexture(`sit-${this.id}`, 0).setDisplaySize(320 / 724 * 183, 183).setAlpha(1);
     this.sprite.play(`sit-${this.id}-enter`);
+    const approach = { x: this.sprite.x, y: this.sprite.y };
+    const motion = { progress: 0 };
     this.scene.tweens.add({
-      targets: this.sprite, x: spot.pose.x, y: spot.pose.y, duration: 650, ease: 'Sine.InOut',
-      onUpdate: () => this.sprite.setDepth(this.sprite.y),
+      targets: motion, progress: 1, duration: 650, ease: 'Linear',
+      onUpdate: () => this.placeTransition(spot, approach, spot.pose, motion.progress, false),
       onComplete: () => {
         this.sprite.anims.stop();
         this.sprite.setTexture(`sit-${this.id}`, 5).setPosition(spot.pose.x, spot.pose.y).setDepth(spot.pose.depth).setAlpha(1);
@@ -98,6 +101,23 @@ export class OfficeActor {
   setPaused(paused: boolean): void {
     if (paused) this.sprite.anims.pause();
     else this.sprite.anims.resume();
+  }
+
+  private placeTransition(spot: InteractionSpot, from: Point, to: Point, progress: number, exiting: boolean): void {
+    const rules = spot.transition;
+    const moveAfter = rules?.moveAfter ?? 0;
+    const travel = Phaser.Math.Clamp((progress - moveAfter) / (1 - moveAfter), 0, 1);
+    const eased = Phaser.Math.Easing.Sine.InOut(travel);
+    this.sprite.setPosition(
+      Phaser.Math.Linear(from.x, to.x, eased),
+      Phaser.Math.Linear(from.y, to.y, eased),
+    );
+    if (!rules) {
+      this.sprite.setDepth(this.sprite.y);
+      return;
+    }
+    const behindForeground = exiting ? progress < rules.occludeAfter : progress >= rules.occludeAfter;
+    this.sprite.setDepth(behindForeground ? spot.pose.depth : rules.frontDepth);
   }
 
   private finishRoute(): void {
