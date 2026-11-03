@@ -1,18 +1,19 @@
-name: Engine and browser tests
+name: Phaser game tests
 on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  navigation:
+  unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check office.js && node --check navigation.js
-      - run: node --test tools/test_navigation.cjs tools/test_engine.cjs
-      - run: python tools/test_art_assets.py
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -20,16 +21,15 @@ jobs:
       fail-fast: false
       matrix:
         engine: [chromium, firefox, webkit]
-    env:
-      BROWSER_ENGINE: ${{ matrix.engine }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: '3.12'
-      - run: pip install -r requirements-dev.txt
-      - run: python -m playwright install --with-deps ${{ matrix.engine }}
-      - run: python tools/test_browser.py
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - run: npm run test:e2e -- --project=${{ matrix.engine }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
