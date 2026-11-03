@@ -1,3 +1,21 @@
+# Storyboards completos de caminhada da v0.15 — 03/11/2026
+
+Os prints reais da v0.14 mostraram falhas entre os estados que as matrizes finais
+não cobriam: corpos cortados pelo pufe preto, passagem sobre a planta ao lado do
+sofá e personagem oculto pela mesa do fliperama. As rotas críticas agora geram
+storyboards de seis quadros, do início à chegada, no teste de navegador.
+
+O pufe preto ganhou uma área sólida compatível com sua silhueta, as aproximações
+do lounge foram movidas para piso aberto e o corredor superior desloca o corpo
+suavemente para longe da planta sem alterar a pegada validada. A máscara de
+profundidade deixou de cobrir atores cujo centro está fora do móvel. No
+fliperama, a pose usa o banco direito, ao lado da mesa, com corpo inteiro.
+
+Evidências novas: `route-coffee-lounge.png`, `route-entry-lounge.png` e
+`route-lounge-arcade.png`, além das matrizes e transições da v0.14.
+
+---
+
 # Matriz visual por personagem da v0.14 — 01/11/2026
 
 A validação de um único ator foi substituída por matrizes de cinco personagens

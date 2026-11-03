@@ -1,4 +1,4 @@
-/* Vida do Dev · illustrated office engine v0.14
+/* Vida do Dev · illustrated office engine v0.15
  * Native Canvas2D: no remote APIs, game framework or online dependency.
  * All 3D-ish world positions are authored in source-image pixels (1536 × 1024).
  * Background is the user-approved illustration with one movable figure extracted.
@@ -19,7 +19,7 @@ const obstacles=[
  [[320,213],[493,214],[550,268],[550,395],[380,398],[321,355]],
  [[575,407],[650,367],[827,381],[847,462],[800,533],[658,558],[570,510]],
  [[680,472],[748,450],[788,519],[739,555],[688,547]],
- [[770,544],[815,534],[868,581],[843,628],[784,636],[752,599]],
+ [[750,525],[820,515],[890,570],[870,650],[775,660],[730,605]],
  [[840,526],[922,500],[978,530],[942,580],[865,581]],
  [[280,447],[431,442],[502,544],[365,636],[290,589]],
  [[420,661],[604,581],[706,650],[647,736],[473,797]],
@@ -27,7 +27,7 @@ const obstacles=[
  [[990,651],[1074,618],[1271,735],[1238,808],[1110,844],[973,769]]
 ];
 const floor=OfficeNavigation.createFloor(boundary,obstacles,12,6);
-const nodes={entry:[936,852],hall:[930,816],desk:[888,744],coffee:[600,350],bathroom:[850,245],meeting:[925,625],sofa:[900,628],arcade:[1090,604]};
+const nodes={entry:[936,852],hall:[930,816],desk:[888,744],coffee:[600,350],bathroom:[850,245],meeting:[970,650],sofa:[850,700],arcade:[1090,604]};
 const destinations={
  coffee:{node:'coffee',label:'Copa',action:'coffee',bubble:'Sem café, sem deploy.'},
  desk:{node:'desk',label:'Estações',action:'type',bubble:'Passou local. Em produção veremos.'},
@@ -39,7 +39,7 @@ const destinations={
 };
 const interactionSlots={
  coffee:[[600,350],[628,345]],desk:[[888,744],[760,680]],
- meeting:[[900,700],[1000,600]],lounge:[[900,628],[942,650]],
+ meeting:[[940,700],[1000,600]],lounge:[[820,700],[880,700]],
  arcade:[[1090,604]],bathroom:[[850,245]],entrance:[[936,852],[908,832]]
 };
 // Visual seats are separate from safe foot-space approach points. The logical
@@ -49,7 +49,7 @@ const interactionVisual={
  'desk:0':[1030,790],'desk:1':[620,840],
  'meeting:0':[1200,375],'meeting:1':[1300,390],
  'lounge:0':[640,485],'lounge:1':[755,480],
- 'arcade:0':[1350,675]
+ 'arcade:0':[1370,710]
 };
 const npcEvents=[
  {name:'SÓ MAIS UM COMMIT',desc:'O Dev jurou que este é o último de hoje.',lines:['só mais um commit...','o último. agora vai.'],dest:'desk'},
@@ -187,9 +187,18 @@ function seatRenderState(a,sitting){
  const visual=interactionVisual[a.slot];
  return {progress,visualSeated,renderAlpha,x:visual&&visualSeated?visual[0]:a.x,y:visual&&visualSeated?visual[1]:a.y};
 }
+function walkingRenderPoint(a,x=a.x,y=a.y){
+ if(a.walking&&a.x<650&&a.y>390&&a.y<590)x-=65*Math.sin(Math.PI*(a.y-390)/200);
+ if(a.walking&&a.x>700&&a.x<900&&a.y>590&&a.y<730)y+=55*Math.sin(Math.PI*(a.y-590)/140);
+ return {x,y};
+}
 function imgDraw(a){if(!a.active||!a.visible)return;const im=images[a.img];if(!im?.complete||!im.naturalWidth)return;
  const sitting=['sit','type'].includes(a.pose)&&!a.walking,typing=a.pose==='type'&&!a.walking;
  let {visualSeated,renderAlpha,x,y}=seatRenderState(a,sitting);
+ // The upper aisle has enough foot space but the illustrated plant and sofa arm
+ // lean into the body silhouette. Shift only the rendered body along a smooth
+ // centerline while its collision footprint follows the validated floor path.
+ ({x,y}=walkingRenderPoint(a,x,y));
  let t=a.elapsed;let step=a.walking?Math.floor(a.motionTime*9)%6:0;let phase=a.walking&&!a.transition?Math.sin(a.motionTime*9)*1.3:Math.sin(t*1.2)*.45;
  if(visualSeated&&images.seated?.complete&&images.seated.naturalWidth){
   const cells={guest:[0,434],dev:[434,435],ana:[869,434],ops:[1303,435],pm:[1738,434]};
@@ -261,6 +270,7 @@ const coverLayers=[
 const obstacleDepth=obstacles.map(poly=>({poly,minX:Math.min(...poly.map(p=>p[0])),maxX:Math.max(...poly.map(p=>p[0])),maxY:Math.max(...poly.map(p=>p[1]))}));
 function redrawBackgroundPoly(poly){ctx.save();ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.clip();ctx.drawImage(images.background,0,0,W,H);ctx.restore();}
 function drawOcclusion(a){if(!images.background?.complete)return;
+ const point=walkingRenderPoint(a),visualActor=a.walking?{...a,x:point.x,y:point.y}:a;
  const sitting=['sit','type'].includes(a.pose)&&!a.walking;
  const loungeSeated=a.goal==='lounge'&&seatRenderState(a,sitting).visualSeated;
  // Every collision polygon is also a ground-contact depth mask. When an actor
@@ -268,8 +278,8 @@ function drawOcclusion(a){if(!images.background?.complete)return;
  // This makes rendering obey the same geometry that A* already treats as solid.
  // On the sofa, the authored seated sprite includes knees and lower legs in
  // front of the cushion; repainting the sofa would cut the actor at the waist.
- for(const layer of obstacleDepth)if(!loungeSeated&&a.x>layer.minX-55&&a.x<layer.maxX+55&&a.y<layer.maxY+18)redrawBackgroundPoly(layer.poly);
- for(const cover of coverLayers)if(!(loungeSeated&&cover.name==='sofa')&&cover.pred(a))redrawBackgroundPoly(cover.poly);
+ for(const layer of obstacleDepth)if(!loungeSeated&&visualActor.x>layer.minX&&visualActor.x<layer.maxX&&visualActor.y<layer.maxY+18)redrawBackgroundPoly(layer.poly);
+ for(const cover of coverLayers)if(!(loungeSeated&&cover.name==='sofa')&&cover.pred(visualActor))redrawBackgroundPoly(cover.poly);
 }
 function drawBubble(a){if(!a.active||!a.visible||!a.bubble)return;let v=a.bubble.text,lines=[];let parts=v.split(' '),s='';for(let w of parts){let test=s?s+' '+w:w;if(test.length>23&&s){lines.push(s);s=w;}else s=test;}if(s)lines.push(s);lines=lines.slice(0,3);
  ctx.save();ctx.font='bold 16px system-ui, sans-serif';let bw=Math.max(105,...lines.map(l=>ctx.measureText(l).width+27));let bh=lines.length*21+16;let x=Math.min(1536-bw-18,Math.max(18,a.x-bw/2)),y=Math.max(90,a.y-(a.img==='dev'?209:194)-bh-15);

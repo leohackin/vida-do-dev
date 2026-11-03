@@ -169,6 +169,67 @@ try:
               }e.render();
             }''', destination)
             page.screenshot(path=str(OUT/f'approaches-{destination}.png'),full_page=True)
+        # Sample complete walking routes, including the narrow sofa/plant aisle
+        # and the beanbags. Final-state captures alone cannot reveal a body
+        # being split by foreground art between destinations.
+        route_specs = [
+            ('coffee-lounge', [600, 350], 'lounge'),
+            ('entry-lounge', [936, 852], 'lounge'),
+            ('lounge-arcade', [820, 700], 'arcade'),
+        ]
+        for name, start, destination in route_specs:
+            positions = page.evaluate('''([start,destination])=>{const e=__officeDebug;
+              e.state.running=true;e.state.eventTimer=Infinity;e.state.spawnTimer=Infinity;
+              for(const o of e.actors){o.active=false;e.slots.release(o.id);e.cancelQueue(o.id)}
+              const a=e.actors.find(v=>v.id==='dev');a.active=true;a.visible=true;a.x=start[0];a.y=start[1];
+              a.pose='idle';a.walking=false;a.transition=null;if(!e.sendTo(a,destination))throw Error('route request failed');
+              const out=[];for(let i=0;i<1000&&a.walking;i++){e.tick(.08);out.push([a.x,a.y,a.facing])}
+              e.state.running=false;return out;
+            }''', [start, destination])
+            assert positions, f'no route frames for {name}'
+            indices = [round(i*(len(positions)-1)/5) for i in range(6)]
+            panels = []
+            for number, index in enumerate(indices, 1):
+                x, y, facing = positions[index]
+                page.evaluate('''([x,y,facing])=>{const e=__officeDebug,a=e.actors.find(v=>v.id==='dev');
+                  a.active=true;a.visible=true;a.walking=true;a.transition=null;a.pose='walk';
+                  a.x=x;a.y=y;a.facing=facing;a.bubble=null;e.render();
+                }''', [x, y, facing])
+                scene = Image.open(BytesIO(page.locator('#scene').screenshot())).convert('RGB')
+                sx, sy = scene.width / 1536, scene.height / 1024
+                panel = scene.crop((round(430*sx), round(300*sy), round(1120*sx), round(800*sy)))
+                panel = panel.resize((414, 300))
+                ImageDraw.Draw(panel).text((7, 6), f'{number}/6 ({x:.0f},{y:.0f})', fill='white', stroke_width=2, stroke_fill='black')
+                panels.append(panel)
+            sheet = Image.new('RGB', (414*3, 300*2), '#111')
+            for i, panel in enumerate(panels):sheet.paste(panel, ((i%3)*414, (i//3)*300))
+            sheet.save(OUT/f'route-{name}.png')
+        # Keep the exact positions that exposed the v0.14 defects visible for
+        # every body shape. This denser matrix complements the route overview.
+        critical_walk = [
+            ('plant', 574, 528),
+            ('pouf-in', 745, 658),
+            ('pouf-mid', 770, 676),
+            ('pouf-out', 793, 689),
+        ]
+        walk_panels = []
+        for label, x, y in critical_walk:
+            for actor_id in ('guest', 'dev', 'ana', 'ops', 'pm'):
+                page.evaluate('''([actorId,x,y])=>{const e=__officeDebug;
+                  for(const o of e.actors)o.active=false;
+                  const a=e.actors.find(v=>v.id===actorId);a.active=true;a.visible=true;
+                  a.walking=true;a.transition=null;a.pose='walk';a.x=x;a.y=y;
+                  a.facing=0;a.bubble=null;e.render();
+                }''', [actor_id, x, y])
+                scene = Image.open(BytesIO(page.locator('#scene').screenshot())).convert('RGB')
+                sx, sy = scene.width / 1536, scene.height / 1024
+                panel = scene.crop((round(430*sx), round(300*sy), round(1120*sx), round(800*sy)))
+                panel = panel.resize((342, 250))
+                ImageDraw.Draw(panel).text((7, 6), f'{label} · {actor_id}', fill='white', stroke_width=2, stroke_fill='black')
+                walk_panels.append(panel)
+        sheet = Image.new('RGB', (342*5, 250*4), '#111')
+        for i, panel in enumerate(walk_panels):sheet.paste(panel, ((i%5)*342, (i//5)*250))
+        sheet.save(OUT/'critical-walk-matrix.png')
         page.evaluate('''()=>{const e=__officeDebug;for(const a of e.actors)a.active=false;
           const dev=e.actors.find(a=>a.id==='dev');dev.active=true;dev.visible=true;dev.walking=false;dev.transition=null;
           dev.x=760;dev.y=610;dev.slot=null;dev.goal='coffee';dev.pose='coffee';dev.bubble=null;e.render();
